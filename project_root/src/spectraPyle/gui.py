@@ -640,6 +640,66 @@ def start(initial_dir=None, preset=None, catalogue_file=None):
         layout=w.Layout(display="none"),
     )
 
+    continuum_normalize_w = w.Checkbox(
+        value=False,
+        description="Continuum normalize",
+        style=style,
+        tooltip="Divide each spectrum by a fitted smooth continuum before resampling",
+    )
+    continuum_order_w = w.BoundedIntText(
+        value=2, min=0, max=8, description="Polynomial order", style=style
+    )
+    continuum_sigma_w = w.BoundedFloatText(
+        value=3.0, min=0.1, max=20.0, step=0.1,
+        description="Fit clipping σ", style=style
+    )
+    continuum_mask_features_w = w.Checkbox(
+        value=True, description="Mask known spectral features", style=style
+    )
+    continuum_emission_halfwidth_w = w.BoundedFloatText(
+        value=12.0, min=0.0, max=500.0, step=1.0,
+        description="Emission mask half-width [Å]", style=style
+    )
+    continuum_note = w.HTML(
+        "<i>Optional per-spectrum continuum-shape removal. The fit is performed "
+        "independently for each selected grism before resampling. Orders 1–2 "
+        "are usually the safest starting point.</i>"
+    )
+    continuum_observed_note = w.HTML(
+        "<i>In observed-frame mode SpectraPyle has no required source redshift, "
+        "so automatic rest-frame feature masking is not applied.</i>"
+    )
+    continuum_options_box = w.VBox()
+
+    def update_continuum_ui(change=None):
+        if norm_w.value == "template":
+            continuum_normalize_w.value = False
+            continuum_normalize_w.disabled = True
+            continuum_options_box.children = []
+            return
+
+        continuum_normalize_w.disabled = False
+        if continuum_normalize_w.value:
+            children = [
+                continuum_note,
+                continuum_order_w,
+                advanced_box(
+                    [
+                        continuum_sigma_w,
+                        continuum_mask_features_w,
+                        continuum_emission_halfwidth_w,
+                    ],
+                    title="⚙️ Continuum fitting options",
+                ),
+            ]
+            if ztype_w.value == "observed_frame":
+                children.append(continuum_observed_note)
+            continuum_options_box.children = children
+        else:
+            continuum_options_box.children = []
+
+    continuum_normalize_w.observe(update_continuum_ui, names="value")
+
     def update_normalization(change=None):
         if norm_w.value == "no_normalization":
             conservation_w.layout.display = ""
@@ -1105,11 +1165,13 @@ Higher is better.<br><br> Note: Euclid Q1 max dithers = 4 (recommended ≥ 2).
         update_ztype()
         update_resampling()
         update_redshift_column()
+        update_continuum_ui()
 
     def update_all_norm_w(change=None):
         update_normalization()
         update_norm_ui()
         update_custom_norm()
+        update_continuum_ui()
 
     spectra_format_w.observe(update_all_spectra_format_w, names="value")
     ztype_w.observe(update_all_ztype_w, names="value")
@@ -1259,6 +1321,35 @@ Higher is better.<br><br> Note: Euclid Q1 max dithers = 4 (recommended ≥ 2).
             safe_set(z_custom_w, cfg.get("z_value", z_custom_w.value))
             safe_set(conservation_w, cfg.get("conservation", conservation_w.value))
             safe_set(
+                continuum_normalize_w,
+                cfg.get("continuum_normalize", continuum_normalize_w.value),
+            )
+            saved_continuum_order = cfg.get(
+                "continuum_norm_order", continuum_order_w.value
+            )
+            # The GUI exposes one global order; per-grism mappings remain
+            # available through YAML/JSON configuration files.
+            if isinstance(saved_continuum_order, int):
+                safe_set(continuum_order_w, saved_continuum_order)
+            safe_set(
+                continuum_sigma_w,
+                cfg.get("continuum_sigma_clip", continuum_sigma_w.value),
+            )
+            safe_set(
+                continuum_mask_features_w,
+                cfg.get(
+                    "continuum_mask_features", continuum_mask_features_w.value
+                ),
+            )
+            safe_set(
+                continuum_emission_halfwidth_w,
+                cfg.get(
+                    "continuum_emission_mask_half_width",
+                    continuum_emission_halfwidth_w.value,
+                ),
+            )
+            update_continuum_ui()
+            safe_set(
                 _State.interval_norm_statistics_value,
                 cfg.get("interval_norm_statistics", _State.interval_norm_statistics_value),
             )
@@ -1358,6 +1449,13 @@ Higher is better.<br><br> Note: Euclid Q1 max dithers = 4 (recommended ≥ 2).
             z_value=z_custom_w.value,
             spectra_normalization=norm_w.value,
             conservation=_State.conservation_value,
+            continuum_normalize=continuum_normalize_w.value,
+            continuum_norm_order=int(continuum_order_w.value),
+            continuum_mask_features=continuum_mask_features_w.value,
+            continuum_emission_mask_half_width=float(
+                continuum_emission_halfwidth_w.value
+            ),
+            continuum_sigma_clip=float(continuum_sigma_w.value),
             spectrum_edges=spectrum_edges_value,
             lambda_edges_rest=lambda_edges_rest_value,
             interval_norm_statistics=_State.interval_norm_statistics_value,
@@ -2003,6 +2101,8 @@ Higher is better.<br><br> Note: Euclid Q1 max dithers = 4 (recommended ≥ 2).
         section("Normalization"),
         norm_w,
         norm_dynamic_box,
+        continuum_normalize_w,
+        continuum_options_box,
         section("Resampling"),
         resampling_w,
         resampling_note,

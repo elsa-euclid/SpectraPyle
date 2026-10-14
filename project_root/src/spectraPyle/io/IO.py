@@ -361,7 +361,11 @@ def output_units(config):
         - out_unit_scale_factor : float
             Scaling factor for units
     """
-    if config['spectra_normalization'] == 'no_normalization':
+    if config.get('continuum_normalize', False):
+        # Flux and error are divided by a fitted continuum with identical units.
+        out_unit = 'dimensionless'
+        out_unit_scale_factor = 1
+    elif config['spectra_normalization'] == 'no_normalization':
         if config['conservation'] == 'luminosity':
             out_unit = 'erg/s/cm2'
             out_unit_scale_factor = 1
@@ -422,8 +426,30 @@ def save_to_file(config, data_dict):
     primary_hdu.header['SURVEY'] = config['survey_name']
     primary_hdu.header['GRISM'] = ','.join(config.get('grisms', []))
     primary_hdu.header['REDSHIFT'] = (data_dict['z_stacking'], 'z of the stacked spectrum')
-    primary_hdu.header['NORMTYPE'] = (config['spectra_normalization'], 'type of spectra normalization')
-    primary_hdu.header['NORMINTR'] = (f"{norm_interv_out}", 'lamda normalization')
+    primary_hdu.header['NORMTYPE'] = (config['spectra_normalization'], 'scalar normalization type')
+    primary_hdu.header['NORMINTR'] = (f"{norm_interv_out}", 'lambda normalization interval')
+    primary_hdu.header['CONTNORM'] = (
+        bool(config.get('continuum_normalize', False)),
+        'per-spectrum continuum normalization applied',
+    )
+    if config.get('continuum_normalize', False):
+        continuum_order = config.get('continuum_norm_order', 2)
+        primary_hdu.header['CONTORD'] = (
+            continuum_order if isinstance(continuum_order, int) else 'per-grism',
+            'continuum polynomial order',
+        )
+        primary_hdu.header['CONTSIG'] = (
+            float(config.get('continuum_sigma_clip', 3.0)),
+            'continuum-fit sigma clipping threshold',
+        )
+        primary_hdu.header['CONTMASK'] = (
+            bool(config.get('continuum_mask_features', True)),
+            'mask bundled spectral features in continuum fit',
+        )
+        primary_hdu.header['CONTEMHW'] = (
+            float(config.get('continuum_emission_mask_half_width', 12.0)),
+            'rest-frame emission-line mask half-width [A]',
+        )
     primary_hdu.header['RES_PIX'] = (data_dict['pixelResampling'], 'pixel size [Angstrom]')
     primary_hdu.header['R_BOOT'] = (config['bootstrapping_R'], 'R bootstrapping samples for err spec.')
     primary_hdu.header['UNITS'] = (out_unit,'physical unit of field')

@@ -68,6 +68,7 @@ Development Team
 - **Lucia Pozzetti**
 - **Margherita Talia** 
 - **Zhiying Mao**
+- **Marcel Lindmeir**
 - **Xavier Lopez Lopez**
 - **Elisabeta Lusso**
 - **Sotiria Fotopoulou**

@@ -13,7 +13,7 @@ stack.run()
 """
 
 from pydantic import BaseModel, Field, field_validator, model_validator
-from typing import Optional, List, Literal, Dict, Any, Tuple
+from typing import Optional, List, Literal, Dict, Any, Tuple, Union
 from pathlib import Path
 import json
 import numpy as np
@@ -168,6 +168,19 @@ class NormalizationConfig(BaseModel):
         Upper wavelength bound for interval normalization (rest-frame Å).
     interval_norm_statistics : {"mean", "median", "maximum", "minimum"}, optional
         Statistic to extract from wavelength interval.
+    continuum_normalize : bool, optional
+        Divide each spectrum by a fitted smooth continuum after the scalar
+        normalization step and before resampling.
+    continuum_norm_order : int or dict[str, int], optional
+        Polynomial order for continuum fitting. A mapping may specify different
+        orders for different grisms, with an optional ``default`` key.
+    continuum_mask_features : bool, optional
+        Exclude bundled emission and absorption features from the continuum fit
+        when a common redshift frame is available.
+    continuum_emission_mask_half_width : float, optional
+        Rest-frame half-width (Angstrom) masked around bundled emission lines.
+    continuum_sigma_clip : float, optional
+        Sigma threshold for iterative clipping of error-normalized residuals.
     """
 
     spectra_normalization: NormalizationType = "median"
@@ -176,6 +189,14 @@ class NormalizationConfig(BaseModel):
     lambda_norm_min: Optional[float] = None
     lambda_norm_max: Optional[float] = None
     interval_norm_statistics: Optional[IntervalStatisticType] = None
+
+    # Optional continuum-shape removal. This is deliberately separate from the
+    # scalar normalization modes above and is instrument-independent.
+    continuum_normalize: bool = False
+    continuum_norm_order: Union[int, Dict[str, int]] = 2
+    continuum_mask_features: bool = True
+    continuum_emission_mask_half_width: float = 12.0
+    continuum_sigma_clip: float = 3.0
 
     @field_validator("lambda_norm_min", "lambda_norm_max")
     @classmethod
@@ -186,6 +207,47 @@ class NormalizationConfig(BaseModel):
         if v < 0 or not np.isfinite(v):
             raise ValueError("Invalid normalization wavelength")
         return v
+
+    @field_validator("continuum_norm_order", mode="before")
+    @classmethod
+    def validate_continuum_order(cls, value):
+        """Validate a single continuum order or a per-grism order mapping."""
+        if value is None:
+            return 2
+
+        def _check_order(order):
+            if isinstance(order, (bool, np.bool_)) or not isinstance(
+                order, (int, np.integer)
+            ):
+                raise ValueError("continuum_norm_order values must be integers")
+            order = int(order)
+            if order < 0 or order > 8:
+                raise ValueError("continuum_norm_order must be between 0 and 8")
+            return order
+
+        if isinstance(value, dict):
+            if not value:
+                raise ValueError("continuum_norm_order mapping cannot be empty")
+            return {str(key): _check_order(order) for key, order in value.items()}
+        return _check_order(value)
+
+    @field_validator(
+        "continuum_emission_mask_half_width",
+        "continuum_sigma_clip",
+    )
+    @classmethod
+    def validate_continuum_positive_parameters(cls, value, info):
+        """Validate continuum mask/clipping scalar parameters."""
+        if not np.isfinite(value):
+            raise ValueError(f"{info.field_name} must be finite")
+        if info.field_name == "continuum_emission_mask_half_width":
+            if value < 0:
+                raise ValueError(
+                    "continuum_emission_mask_half_width must be >= 0"
+                )
+        elif value <= 0:
+            raise ValueError("continuum_sigma_clip must be > 0")
+        return float(value)
 
     @model_validator(mode="after")
     def validate_norm(self):
@@ -213,6 +275,14 @@ class NormalizationConfig(BaseModel):
             self.lambda_norm_min = None
             self.lambda_norm_max = None
             self.interval_norm_statistics = None
+
+        if self.continuum_normalize and self.spectra_normalization == "template":
+            raise ValueError(
+                "continuum_normalize=True cannot be combined with "
+                "spectra_normalization='template'. Continuum normalization "
+                "removes the per-spectrum continuum shape, while template "
+                "normalization derives stack-level overlap scalings."
+            )
 
         return self
 

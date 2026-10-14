@@ -214,6 +214,31 @@ def adapt_gui_flat_to_schema(raw: Dict[str, Any]) -> Dict[str, Any]:
         lambda_norm_min=raw.get("lambda_norm_min"),
         lambda_norm_max=raw.get("lambda_norm_max"),
         interval_norm_statistics=raw.get("interval_norm_statistics"),
+        continuum_normalize=(
+            raw.get("continuum_normalize")
+            if raw.get("continuum_normalize") is not None
+            else False
+        ),
+        continuum_norm_order=(
+            raw.get("continuum_norm_order")
+            if raw.get("continuum_norm_order") is not None
+            else 2
+        ),
+        continuum_mask_features=(
+            raw.get("continuum_mask_features")
+            if raw.get("continuum_mask_features") is not None
+            else True
+        ),
+        continuum_emission_mask_half_width=(
+            raw.get("continuum_emission_mask_half_width")
+            if raw.get("continuum_emission_mask_half_width") is not None
+            else 12.0
+        ),
+        continuum_sigma_clip=(
+            raw.get("continuum_sigma_clip")
+            if raw.get("continuum_sigma_clip") is not None
+            else 3.0
+        ),
     )
 
     # ----------- CATALOGUE -----------
@@ -582,6 +607,13 @@ def flatten_schema_model(cfg):
     flat["conservation"]            = norm.get("conservation")
     flat["lambda_norm_rest"]        = [norm.get("lambda_norm_min"), norm.get("lambda_norm_max")]
     flat["interval_norm_statistics"] = norm.get("interval_norm_statistics")
+    flat["continuum_normalize"] = norm.get("continuum_normalize", False)
+    flat["continuum_norm_order"] = norm.get("continuum_norm_order", 2)
+    flat["continuum_mask_features"] = norm.get("continuum_mask_features", True)
+    flat["continuum_emission_mask_half_width"] = norm.get(
+        "continuum_emission_mask_half_width", 12.0
+    )
+    flat["continuum_sigma_clip"] = norm.get("continuum_sigma_clip", 3.0)
 
     # ---------------- CATALOG ----------------
     cat = cfg.get("catalog_columns", {})

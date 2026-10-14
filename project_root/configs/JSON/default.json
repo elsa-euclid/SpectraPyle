@@ -44,7 +44,12 @@
     "conservation": null,
     "lambda_norm_min": null,
     "lambda_norm_max": null,
-    "interval_norm_statistics": null
+    "interval_norm_statistics": null,
+    "continuum_normalize": false,
+    "continuum_norm_order": 2,
+    "continuum_mask_features": true,
+    "continuum_emission_mask_half_width": 12.0,
+    "continuum_sigma_clip": 3.0
   },
   "catalog_columns": {
     "ID_column_name": "object_id",

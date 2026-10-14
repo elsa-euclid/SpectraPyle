@@ -156,13 +156,21 @@ This tab is organized into five collapsible sections:
   - **Custom Column** — Provide a custom common redshift, then use the redshift column from your catalogue and shift all spectra to this common redshift value  
 
 **Normalization** (link to :doc:`normalization`)
-  Choose the normalization strategy:
+  Choose the scalar normalization strategy:
 
-  - **no_normalization** — No normalization; use raw fluxes
-  - **Interval** - Normalize over a rest-frame wavelength range
+  - **no_normalization** — No scalar normalization; use the selected flux/luminosity conservation mode
+  - **Custom** — Divide by a per-spectrum catalogue value
+  - **Interval** — Normalize over a rest-frame wavelength range
   - **Median** — Normalize each spectrum to its median flux
-  - **Integral** — Normalize each spectrum to the integrated flux over entire spectrum
+  - **Integral** — Normalize each spectrum to the integrated mean flux
   - **Template** — Normalize using a Francis+1991-like approach
+
+  A separate **Continuum normalize** checkbox optionally removes the smooth
+  continuum shape of every individual spectrum/grism before resampling. The GUI
+  exposes the polynomial order and advanced controls for feature masking and
+  fit clipping. This operation is instrument-independent and is disabled for
+  ``template`` normalization. In observed-frame mode, automatic rest-frame
+  feature masking is not applied because source redshifts are not required.
 
 **Resampling** (link to :doc:`resampling`)
   Define the rest-frame wavelength grid:

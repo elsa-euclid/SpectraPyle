@@ -2,7 +2,7 @@
 Multiprocessing driver for per-spectrum processing.
 
 :func:`main_parallel` splits spectrum IDs across CPUs and runs the
-read → redshift-shift → normalize → resample pipeline for each spectrum.
+read → redshift-shift → scalar/continuum normalization → resample pipeline for each spectrum.
 Recoverable problems affecting a single spectrum are recorded and skipped;
 structural/configuration errors propagate and stop the run.
 """
@@ -388,6 +388,60 @@ def process_spectrum_parallel(args):
                 elif norm_type == "custom":
                     spec, err, normalization_factor = snorm.normSpecCustom(
                         wavelength, spec, err, norm_param
+                    )
+                else:
+                    raise ValueError(
+                        f"Normalization type '{norm_type}' is not supported."
+                    )
+
+                # Optional continuum-shape removal. This is independent of the
+                # scalar normalization above and is applied per spectrum/grism
+                # before resampling. Keep the scalar normalization_factor as the
+                # continuum is wavelength-dependent and cannot be represented by
+                # that diagnostic.
+                if config.get("continuum_normalize", False):
+                    order_cfg = config.get("continuum_norm_order", 2)
+                    if isinstance(order_cfg, dict):
+                        continuum_order = order_cfg.get(
+                            grism, order_cfg.get("default", 2)
+                        )
+                    else:
+                        continuum_order = order_cfg
+
+                    if config.get("continuum_mask_features", True):
+                        if config.get("z_type") == "observed_frame":
+                            # No source redshift is required in observed-frame
+                            # mode, therefore bundled rest-frame features cannot
+                            # be positioned reliably. Robust clipping remains
+                            # active; a caller can still provide a custom mask by
+                            # using normSpecContinuum directly.
+                            feature_mask = np.zeros_like(wavelength, dtype=bool)
+                        else:
+                            try:
+                                frame_scale = 1.0 + float(z_stacking)
+                            except (TypeError, ValueError) as exc:
+                                raise ValueError(
+                                    "Continuum feature masking requires a numeric "
+                                    "stacking redshift outside observed-frame mode."
+                                ) from exc
+                            feature_mask = snorm.build_feature_mask(
+                                wavelength,
+                                frame_scale=frame_scale,
+                                emission_halfwidth=config.get(
+                                    "continuum_emission_mask_half_width", 12.0
+                                ),
+                            )
+                    else:
+                        feature_mask = np.zeros_like(wavelength, dtype=bool)
+
+                    spec, err, _continuum = snorm.normSpecContinuum(
+                        specid,
+                        wavelength,
+                        spec,
+                        err,
+                        order=continuum_order,
+                        feature_mask=feature_mask,
+                        sigma_clip=config.get("continuum_sigma_clip", 3.0),
                     )
             except NormalizationError:
                 raise

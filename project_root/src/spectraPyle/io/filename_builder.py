@@ -33,6 +33,9 @@ _HASH_FIELDS = [
     "instrument_name", "survey_name", "grisms", "data_release",
     "filename_in", "redshift_column_name",
     "spectra_normalization", "lambda_norm_min", "lambda_norm_max",
+    "continuum_normalize", "continuum_norm_order",
+    "continuum_mask_features", "continuum_emission_mask_half_width",
+    "continuum_sigma_clip",
     "sigma_clipping_conditions",
     "pixel_resampling", "pixel_resampling_type", "nyquist_sampling",
     "bootstrapping_R",
@@ -82,6 +85,13 @@ def build_filename(cfg):
     if norm == "interval":
         l0, l1 = cfg["lambda_norm_rest"]
         parts.append(f"{int(l0)}-{int(l1)}")
+
+    if cfg.get("continuum_normalize", False):
+        continuum_order = cfg.get("continuum_norm_order", 2)
+        if isinstance(continuum_order, int):
+            parts.append(f"cont{continuum_order}")
+        else:
+            parts.append("contvar")
 
     # sigma clipping
     sigma = cfg["sigma_clipping_conditions"]

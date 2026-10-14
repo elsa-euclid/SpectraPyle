@@ -52,6 +52,11 @@
     "n_min_dithers": 3,
     "multiprocessing": true,
     "max_cpu_fraction": 0.9,
-    "plot_results": true
+    "plot_results": true,
+    "continuum_normalize": false,
+    "continuum_norm_order": 2,
+    "continuum_mask_features": true,
+    "continuum_emission_mask_half_width": 12.0,
+    "continuum_sigma_clip": 3.0
   }
 }

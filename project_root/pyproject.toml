@@ -107,7 +107,7 @@ where = ["src"]
 [tool.setuptools.package-data]
 "spectraPyle" = [
     "instruments/*.json",
-    "../tables/*.csv"
+    "tables/*.csv"
 ]
 
 # =========================================================

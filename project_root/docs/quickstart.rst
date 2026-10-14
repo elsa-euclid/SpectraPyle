@@ -111,3 +111,8 @@ All inputs pass through a strict validation pipeline::
    flatten_schema_model()        runtime/runtime_adapter.py
        ↓
    Stacking(flat_dict).run()     stacking/stacking.py
+
+Optional continuum normalization is configured inside the ``norm`` block and
+works with every instrument driver, including ``generic``. See
+:doc:`normalization` for the polynomial fitting, feature masking, and EW
+caveats.

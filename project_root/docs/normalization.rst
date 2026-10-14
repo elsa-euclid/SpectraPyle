@@ -1,7 +1,17 @@
 Normalization Methods
 =====================
 
-Before stacking spectra from multiple galaxies, individual spectra must be normalized to a common scale. This ensures that the stacked spectrum reflects the underlying ensemble properties rather than the varying flux levels of individual sources. SpectraPyle offers six normalization strategies, controlled by the ``spectra_normalization`` configuration field.
+SpectraPyle distinguishes between **scalar normalization** and optional
+**continuum normalization**. The six ``spectra_normalization`` strategies below
+apply one multiplicative scale factor to each spectrum (or, for the Francis
+method, derive relative scale factors from the ensemble). They preserve the
+continuum shape of each individual spectrum.
+
+Continuum normalization is a separate, optional preprocessing step controlled by
+``continuum_normalize``. It divides each individual spectrum by a smooth fitted
+continuum before resampling and stacking. This removes broad continuum-shape
+differences and therefore changes the population weighting represented by the
+stack.
 
 Comparison Table
 ----------------
@@ -41,11 +51,11 @@ Comparison Table
 
 .. note::
 
-   All normalization functions return a tuple of three values:
-
-   1. **normalized flux** — the flux array after normalization
-   2. **normalized error** — the 1-sigma error array after normalization (scaled by the same normalization value)
-   3. **normalization value** — the scalar used to normalize (median, interval statistic, integral, catalog value, or scaling factor)
+   The scalar normalization functions return normalized flux, normalized error,
+   and the scalar normalization value. Continuum normalization instead returns
+   the wavelength-dependent fitted continuum in addition to normalized flux and
+   error. The legacy ``norm_factor`` diagnostic continues to describe only the
+   scalar normalization step.
 
 No Normalization
 ----------------
@@ -198,6 +208,142 @@ where :math:`N_{\mathrm{custom}}` is a per-spectrum scalar read from a catalog c
        custom_column_name: "ref_flux_band_mag"
 
 The catalog must include the column specified by ``custom_column_name``. Each value should be finite and positive.
+
+Continuum Normalization (optional)
+----------------------------------
+
+**Config flag:** ``continuum_normalize: true``
+
+**Function:** :func:`~spectraPyle.spectrum.normalization.normSpecContinuum`
+
+Continuum normalization is independent of the scalar ``spectra_normalization``
+choice. For every individual spectrum and every selected grism/slit, SpectraPyle
+fits a smooth polynomial continuum :math:`C(\lambda)` and applies
+
+.. math::
+
+   f_{\mathrm{cont}}(\lambda) = \frac{f(\lambda)}{C(\lambda)}
+
+and
+
+.. math::
+
+   \sigma_{\mathrm{cont}}(\lambda) = \frac{\sigma(\lambda)}{C(\lambda)}.
+
+The operation is performed **before resampling**. It is implemented in the
+generic spectrum-processing layer and therefore does not depend on Euclid, DESI,
+or any other instrument module.
+
+Why use it?
+~~~~~~~~~~~
+
+A scalar normalization, such as division by the median, does not change the
+intrinsic equivalent width of an individual spectrum. However, spectra with
+different continuum slopes can still contribute with different effective
+weights at different wavelengths when they are stacked. Continuum normalization
+removes most of this smooth shape dependence and produces a stack that is closer
+to an average of the individual *fractional* spectral features.
+
+This can be useful for absorption-line studies, template construction, or other
+applications where continuum shape is not the quantity of interest. It should
+not be enabled when the broad continuum or relative spectrophotometric shape is
+part of the desired signal.
+
+.. important::
+
+   Continuum-normalized stacking does **not** guarantee that an equivalent width
+   measured on the final stack is exactly equal to the arithmetic mean of the
+   individual equivalent widths. Spectral coverage, masks, inverse-variance
+   weighting, resolution, velocity broadening, and the continuum fit itself can
+   all affect the statistic represented by the stack.
+
+Fitting and feature protection
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The continuum is fitted with an error-weighted polynomial. Iterative clipping is
+performed on residuals normalized by the input 1-sigma errors, making the
+clipping consistent with heteroscedastic spectra.
+
+When ``continuum_mask_features: true`` (default), SpectraPyle also excludes:
+
+- all absorption-feature bandpasses in the bundled absorption table; and
+- the curated primary emission lines in the bundled vacuum line table.
+
+The absorption pseudo-continuum sidebands are intentionally left available to
+constrain the smooth continuum.
+
+For stacks shifted to a common redshift, the feature mask is moved to the actual
+stacking frame. This includes rest-frame, minimum-z, maximum-z, median-z, and
+other non-zero common-frame stacks. In ``observed_frame`` mode SpectraPyle does
+not require source redshifts, so it cannot place rest-frame features reliably;
+automatic feature masking is therefore skipped and robust clipping is used
+instead.
+
+Polynomial order
+~~~~~~~~~~~~~~~~
+
+``continuum_norm_order`` can be either a single integer or a mapping keyed by
+selected grism/slit name. The default is 2. Orders 1--2 are recommended as the
+first choices because high-order polynomials can begin to absorb broad
+astrophysical features. Higher orders should be validated for the specific
+wavelength range and science case.
+
+If the requested polynomial is insufficiently constrained, cannot be fitted, or
+becomes non-positive over valid wavelengths, SpectraPyle automatically retries
+with progressively lower orders, down to a positive constant median continuum.
+
+**YAML examples:**
+
+.. code-block:: yaml
+
+   norm:
+     spectra_normalization: median
+     continuum_normalize: true
+     continuum_norm_order: 2
+     continuum_mask_features: true
+     continuum_emission_mask_half_width: 12.0
+     continuum_sigma_clip: 3.0
+
+For an instrument with multiple spectral segments, the order may be set per
+segment using the exact grism/slit names defined by that instrument module:
+
+.. code-block:: yaml
+
+   norm:
+     spectra_normalization: median
+     continuum_normalize: true
+     continuum_norm_order:
+       blue: 2
+       red: 2
+       default: 2
+
+The mapping is instrument-agnostic: ``default``, ``merged``, ``arm1``, or any
+other segment name can be used if that is how the corresponding instrument
+module identifies its spectra.
+
+Equivalent widths and Lick-style indices
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A constant scalar normalization leaves an individual equivalent width exactly
+unchanged. A smooth continuum division will usually preserve narrow local
+line-to-continuum contrasts approximately, but it is not mathematically neutral
+for every index definition. Lick-style indices use local pseudo-continua and are
+often relatively insensitive to a low-order multiplicative correction; broad
+molecular bands and wide indices are more sensitive and should be explicitly
+validated.
+
+Uncertainty caveat
+~~~~~~~~~~~~~~~~~~
+
+The returned error array is divided by the fitted continuum, but the uncertainty
+of the continuum model itself is **not** propagated. This approximation is most
+appropriate when the continuum is reasonably constrained. For very low
+continuum-S/N spectra, compare results with and without continuum normalization
+and inspect the stability of the fitted continuum.
+
+Continuum normalization cannot currently be combined with
+``spectra_normalization: template``. The Francis-style method derives
+stack-level overlap scalings and represents a different normalization strategy.
 
 Template Normalization (Francis et al. 1991)
 ---------------------------------------------

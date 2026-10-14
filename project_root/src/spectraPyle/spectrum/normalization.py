@@ -6,12 +6,378 @@ including median-flux normalization over a wavelength range, and the
 :func:`francis1991_normalize` template-based method (Francis et al. 1991).
 """
 
+import re
+from functools import lru_cache
+from importlib import resources
+
 import numpy as np
+import pandas as pd
 
 from spectraPyle.utils.log import get_logger
 from spectraPyle.utils.exceptions import NormalizationError
 
 logger = get_logger(__name__)
+
+# ---------------------------------------------------------------------------
+# Feature masks for continuum normalization
+# ---------------------------------------------------------------------------
+
+@lru_cache(maxsize=1)
+def _load_continuum_feature_bands():
+    """Load bundled rest-frame spectral features used by the continuum mask.
+
+    The absorption table contributes only the feature bandpasses (``Line limits``),
+    while the pseudo-continuum sidebands remain available to constrain the fit.
+    Emission-line wavelengths are masked symmetrically around their rest-frame
+    centres. The tables are package data and are therefore available for every
+    supported instrument, including the Generic FITS reader.
+
+    Returns
+    -------
+    absorption_bands : tuple of tuple
+        Rest-frame ``(lower, upper)`` absorption-feature limits in Angstrom.
+    emission_centres : tuple of float
+        Rest-frame emission-line centres in Angstrom.
+    """
+
+    absorption_bands = []
+    emission_centres = []
+
+    try:
+        table = resources.files("spectraPyle").joinpath(
+            "tables", "absorptions_table.csv"
+        )
+        with resources.as_file(table) as path:
+            absorption = pd.read_csv(path)
+        for value in absorption["Line limits"].dropna():
+            numbers = re.findall(
+                r"\d+(?:\.\d+)?",
+                str(value).replace("–", "-").replace("—", "-"),
+            )
+            if len(numbers) >= 2:
+                lo, hi = float(numbers[0]), float(numbers[1])
+                absorption_bands.append((min(lo, hi), max(lo, hi)))
+    except Exception as exc:  # pragma: no cover - package-data failure
+        logger.warning(
+            "Could not load absorption-feature table for continuum masking: %s",
+            exc,
+        )
+
+    try:
+        table = resources.files("spectraPyle").joinpath(
+            "tables", "emission_lines_vacuum_table.csv"
+        )
+        with resources.as_file(table) as path:
+            emission = pd.read_csv(path)
+        # The bundled table contains many very weak transitions. Mask the
+        # curated primary set (show == 1) by default; robust clipping handles
+        # additional isolated lines without discarding most continuum pixels.
+        if "show" in emission.columns:
+            emission = emission[emission["show"].fillna(0).astype(int) == 1]
+        emission_centres = [
+            float(value)
+            for value in emission["wavelength_AA"].dropna().to_numpy()
+        ]
+    except Exception as exc:  # pragma: no cover - package-data failure
+        logger.warning(
+            "Could not load emission-line table for continuum masking: %s",
+            exc,
+        )
+
+    return tuple(absorption_bands), tuple(emission_centres)
+
+
+def build_feature_mask(
+    lbd,
+    frame_scale=1.0,
+    emission_halfwidth=12.0,
+):
+    """Build a mask of known spectral features for continuum fitting.
+
+    Parameters
+    ----------
+    lbd : array-like
+        Wavelength array in the frame in which the continuum is fitted.
+    frame_scale : float, optional
+        Multiplicative factor that maps bundled rest-frame feature wavelengths
+        into ``lbd``. For a stack evaluated at redshift ``z_stack``, use
+        ``1 + z_stack``. The default is 1 (rest frame).
+    emission_halfwidth : float, optional
+        Rest-frame half-width, in Angstrom, masked around every bundled
+        emission line. The width is multiplied by ``frame_scale``.
+
+    Returns
+    -------
+    ndarray of bool
+        ``True`` for pixels excluded from the continuum fit.
+
+    Notes
+    -----
+    The mask is instrument-independent: it uses only wavelength and bundled
+    astrophysical line lists. In observed-frame stacking, where SpectraPyle does
+    not require source redshifts, the processing pipeline intentionally does not
+    apply this automatic rest-frame feature mask.
+    """
+
+    lbd = np.asarray(lbd, dtype=float)
+    if not np.isfinite(frame_scale) or frame_scale <= 0:
+        raise ValueError("frame_scale must be finite and > 0")
+    if not np.isfinite(emission_halfwidth) or emission_halfwidth < 0:
+        raise ValueError("emission_halfwidth must be finite and >= 0")
+
+    absorption_bands, emission_centres = _load_continuum_feature_bands()
+    mask = np.zeros(lbd.shape, dtype=bool)
+
+    for lo, hi in absorption_bands:
+        mask |= (lbd >= lo * frame_scale) & (lbd <= hi * frame_scale)
+
+    halfwidth = emission_halfwidth * frame_scale
+    for centre in emission_centres:
+        mask |= np.abs(lbd - centre * frame_scale) <= halfwidth
+
+    return mask
+
+
+def _robust_scatter(values):
+    """Return a robust 1-sigma scatter estimate for finite values."""
+
+    values = np.asarray(values, dtype=float)
+    values = values[np.isfinite(values)]
+    if values.size == 0:
+        return np.nan
+
+    centre = np.nanmedian(values)
+    mad = np.nanmedian(np.abs(values - centre))
+    scatter = 1.4826 * mad
+    if not np.isfinite(scatter) or scatter == 0:
+        scatter = np.nanstd(values)
+    return scatter
+
+
+def normSpecContinuum(
+    specid,
+    lbd,
+    flux,
+    error,
+    order=2,
+    feature_mask=None,
+    sigma_clip=3.0,
+    max_iter=4,
+    min_pix_per_param=5,
+):
+    """Continuum-normalize one spectrum with a robust polynomial fit.
+
+    A low-order polynomial is fitted to continuum pixels using inverse-error
+    weights. Known spectral features can be excluded with ``feature_mask`` and
+    additional outliers are iteratively rejected in *error-normalized* residual
+    space. Flux and 1-sigma error are then divided by the fitted continuum.
+
+    If the requested polynomial is not sufficiently constrained, fails to fit,
+    or becomes non-positive over valid wavelengths, progressively lower orders
+    are attempted down to a constant positive median continuum.
+
+    Parameters
+    ----------
+    specid : str or int
+        Spectrum identifier, used only in log/error messages.
+    lbd, flux, error : array-like
+        Wavelength, flux, and 1-sigma uncertainty arrays for one spectrum.
+    order : int, optional
+        Requested polynomial order. Typical values are 1--2; higher orders
+        should be validated for the science case.
+    feature_mask : array-like of bool, optional
+        Pixels to exclude from the fit (``True`` = excluded). If omitted,
+        :func:`build_feature_mask` is evaluated in the rest frame.
+    sigma_clip : float, optional
+        Clipping threshold applied to robustly standardized residuals.
+    max_iter : int, optional
+        Maximum number of fit/clipping iterations per polynomial order.
+    min_pix_per_param : int, optional
+        Minimum number of usable continuum pixels per polynomial coefficient.
+
+    Returns
+    -------
+    fluxNorm : ndarray
+        Continuum-normalized flux.
+    errNorm : ndarray
+        Input 1-sigma error divided by the fitted continuum. Uncertainty in the
+        fitted continuum itself is not included.
+    continuum : ndarray
+        Fitted continuum evaluated on ``lbd``.
+
+    Raises
+    ------
+    ValueError
+        If inputs are inconsistent or no positive continuum model can be found.
+    """
+
+    lbd = np.asarray(lbd, dtype=float)
+    flux = np.asarray(flux, dtype=float)
+    error = np.asarray(error, dtype=float)
+
+    if not (lbd.shape == flux.shape == error.shape):
+        raise ValueError(
+            f"Continuum normalization failure for {specid}: wavelength, flux, "
+            "and error arrays must have identical shapes."
+        )
+    if lbd.ndim != 1:
+        raise ValueError(
+            f"Continuum normalization failure for {specid}: expected 1-D arrays."
+        )
+    if not isinstance(order, (int, np.integer)) or isinstance(order, (bool, np.bool_)):
+        raise ValueError("Continuum polynomial order must be an integer")
+    if order < 0:
+        raise ValueError("Continuum polynomial order must be >= 0")
+    if not np.isfinite(sigma_clip) or sigma_clip <= 0:
+        raise ValueError("sigma_clip must be finite and > 0")
+    if max_iter < 1:
+        raise ValueError("max_iter must be >= 1")
+    if min_pix_per_param < 1:
+        raise ValueError("min_pix_per_param must be >= 1")
+
+    finite = (
+        np.isfinite(lbd)
+        & np.isfinite(flux)
+        & np.isfinite(error)
+        & (error > 0)
+    )
+
+    if feature_mask is None:
+        feature_mask = build_feature_mask(lbd)
+    feature_mask = np.asarray(feature_mask, dtype=bool)
+    if feature_mask.shape != lbd.shape:
+        raise ValueError(
+            f"Continuum normalization failure for {specid}: feature_mask must "
+            "match the spectrum shape."
+        )
+
+    continuum_pixels = finite & (~feature_mask)
+    n_continuum = int(np.sum(continuum_pixels))
+    if n_continuum < 2:
+        raise NormalizationError(
+            f"Continuum normalization failure for {specid}: too few valid "
+            f"continuum pixels ({n_continuum})."
+        )
+
+    requested_order = int(order)
+    last_reason = "continuum fit failed"
+
+    for effective_order in range(requested_order, -1, -1):
+        min_required = max(
+            effective_order + 1,
+            min_pix_per_param * (effective_order + 1),
+        )
+        if n_continuum < min_required and effective_order > 0:
+            last_reason = (
+                f"only {n_continuum} continuum pixels for order {effective_order}"
+            )
+            continue
+
+        if effective_order == 0:
+            continuum_value = np.nanmedian(flux[continuum_pixels])
+            if np.isfinite(continuum_value) and continuum_value > 0:
+                continuum = np.full(lbd.shape, continuum_value, dtype=float)
+                if effective_order != requested_order:
+                    logger.warning(
+                        "Continuum normalization for %s: reduced polynomial "
+                        "order %s -> 0 (%s).",
+                        specid,
+                        requested_order,
+                        last_reason,
+                    )
+                return flux / continuum, error / continuum, continuum
+            last_reason = f"invalid median continuum ({continuum_value})"
+            continue
+
+        fit_domain = continuum_pixels.copy()
+        x0 = np.nanmedian(lbd[continuum_pixels])
+        half_range = 0.5 * (
+            np.nanmax(lbd[continuum_pixels]) - np.nanmin(lbd[continuum_pixels])
+        )
+        if not np.isfinite(half_range) or half_range <= 0:
+            last_reason = "degenerate wavelength range"
+            continue
+        x = (lbd - x0) / half_range
+
+        coefficients = None
+        fit_failed = False
+        for _ in range(max_iter):
+            if np.sum(fit_domain) < min_required:
+                fit_failed = True
+                last_reason = "too few pixels after continuum clipping"
+                break
+
+            try:
+                weights = 1.0 / error[fit_domain]
+                coefficients = np.polyfit(
+                    x[fit_domain],
+                    flux[fit_domain],
+                    effective_order,
+                    w=weights,
+                )
+            except (np.linalg.LinAlgError, ValueError, FloatingPointError) as exc:
+                fit_failed = True
+                last_reason = f"polynomial fit failed: {exc}"
+                break
+
+            model = np.polyval(coefficients, x)
+            pulls = (flux - model) / error
+            centre = np.nanmedian(pulls[fit_domain])
+            scatter = _robust_scatter(pulls[fit_domain])
+
+            if not np.isfinite(scatter) or scatter == 0:
+                break
+
+            new_fit_domain = (
+                continuum_pixels
+                & np.isfinite(pulls)
+                & (np.abs(pulls - centre) <= sigma_clip * scatter)
+            )
+
+            if np.array_equal(new_fit_domain, fit_domain):
+                break
+            if np.sum(new_fit_domain) < min_required:
+                last_reason = "too few pixels after continuum clipping"
+                break
+            fit_domain = new_fit_domain
+
+        if fit_failed or coefficients is None:
+            continue
+
+        # Refit once on the final accepted pixel set so the returned model is
+        # exactly consistent with the final clipping mask.
+        try:
+            weights = 1.0 / error[fit_domain]
+            coefficients = np.polyfit(
+                x[fit_domain],
+                flux[fit_domain],
+                effective_order,
+                w=weights,
+            )
+            continuum = np.polyval(coefficients, x)
+        except (np.linalg.LinAlgError, ValueError, FloatingPointError) as exc:
+            last_reason = f"final polynomial fit failed: {exc}"
+            continue
+
+        valid_model = finite & np.isfinite(continuum) & (continuum > 0)
+        if np.all(valid_model[finite]):
+            if effective_order != requested_order:
+                logger.warning(
+                    "Continuum normalization for %s: reduced polynomial order "
+                    "%s -> %s (%s).",
+                    specid,
+                    requested_order,
+                    effective_order,
+                    last_reason,
+                )
+            return flux / continuum, error / continuum, continuum
+
+        last_reason = "fitted continuum is non-positive or non-finite"
+
+    raise NormalizationError(
+        f"Continuum normalization failure for {specid}: no valid positive "
+        f"continuum model found ({last_reason})."
+    )
 
 def normSpecInterv(specid, lbd, flux, error, lambdamin_norm, lambdamax_norm, norm_stat):
     """Normalize spectrum over a wavelength interval.

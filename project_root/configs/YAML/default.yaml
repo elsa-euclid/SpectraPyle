@@ -37,6 +37,13 @@ redshift:
   z_type: rest_frame
 norm:
   spectra_normalization: median
+  # Optional continuum-shape removal, independent of the scalar normalization.
+  # Applied to each spectrum/grism before resampling.
+  continuum_normalize: false
+  continuum_norm_order: 2
+  continuum_mask_features: true
+  continuum_emission_mask_half_width: 12.0
+  continuum_sigma_clip: 3.0
 catalog_columns:
   ID_column_name: object_id
   redshift_column_name: spe_z
