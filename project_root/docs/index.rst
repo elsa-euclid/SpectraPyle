@@ -3,7 +3,7 @@ SpectraPyle Documentation
 
 SpectraPyle is a flexible, scalable tool for stacking galaxy spectra.
 It shifts spectra to a common rest frame, normalizes, resamples, sigma-clips,
-and combines them using six stacking estimators: mean, median, geometric mean (lenient & strict),
+and combines them using various stacking estimators: mean, median, geometric mean (lenient & strict),
 mode (HSM), and weighted mean. Includes bootstrap uncertainty estimation and interactive plots.
 
 **Supported instruments:** Euclid (NISP) · DESI · Generic (any standard FITS)
