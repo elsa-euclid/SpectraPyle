@@ -105,15 +105,22 @@ Percentile Bands
 
 **Four percentile traces** are plotted as optional, hidden-by-default bands:
 
-+--------+----------------------------------+------+
-| Trace  | Representation                   | Style|
-+========+==================================+======+
-| 16th–84th | Filled band (±1σ envelope)  | Solid|
-+--------+----------------------------------+------+
-| 98th   | Line (≈2σ upper tail)            | Dashed|
-+--------+----------------------------------+------+
-| 99th   | Line (≈3σ upper tail)            | Dotted|
-+--------+----------------------------------+------+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 60 20
+
+   * - Trace
+     - Representation
+     - Style
+   * - 16th–84th
+     - Filled band (±1σ envelope)
+     - Solid
+   * - 98th
+     - Line (≈2σ upper tail)
+     - Dashed
+   * - 99th
+     - Line (≈3σ upper tail)
+     - Dotted
 
 **16th–84th percentile band:**
    - Single legend entry: ``±1σ envelope (16th–84th)``
@@ -175,31 +182,37 @@ Legend & Interactivity
 When to Use Each Trace
 ----------------------
 
-+---------+-------------------+----------------------------------------------+
-| Trace   | Best for          | Interpretation                               |
-+=========+===================+==============================================+
-| Median  | Robust estimate   | Central value, unaffected by outliers        |
-+---------+-------------------+----------------------------------------------+
-| Mean    | Reference         | Classical average; compare with median       |
-+---------+-------------------+----------------------------------------------+
-| Geom.   | Log-space         | Geometric average                            |
-| Mean    | stacking          |                                              |
-+---------+-------------------+----------------------------------------------+
-| Strict  | Strict            | Check for wavelength regions with ≤0 flux   |
-| Geom.   | positivity        | (will be NaN if present)                    |
-| Mean    |                   |                                              |
-+---------+-------------------+----------------------------------------------+
-| Mode    | Peak detection    | Most common flux value                       |
-+---------+-------------------+----------------------------------------------+
-| Weighted| Quality-weighted  | Downweights noisy spectra                    |
-| Mean    | stacking          |                                              |
-+---------+-------------------+----------------------------------------------+
-| ±1σ env | Distribution      | Central 68% (non-parametric)                 |
-| (16–84) | inspection        |                                              |
-+---------+-------------------+----------------------------------------------+
-| 98th,   | Tail inspection   | High-flux outliers or contamination          |
-| 99th    |                   |                                              |
-+---------+-------------------+----------------------------------------------+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 30 50
+
+   * - Trace
+     - Best for
+     - Interpretation
+   * - Median
+     - Robust estimate
+     - Central value, unaffected by outliers
+   * - Mean
+     - Reference
+     - Classical average; compare with median
+   * - Geom. Mean
+     - Log-space stacking
+     - Geometric average
+   * - Strict Geom. Mean
+     - Strict positivity
+     - Check for wavelength regions with ≤0 flux (will be NaN if present)
+   * - Mode
+     - Peak detection
+     - Most common flux value
+   * - Weighted Mean
+     - Quality-weighted stacking
+     - Downweights noisy spectra
+   * - ±1σ env (16–84)
+     - Distribution inspection
+     - Central 68% (non-parametric)
+   * - 98th, 99th
+     - Tail inspection
+     - High-flux outliers or contamination
 
 ---
 
@@ -230,7 +243,7 @@ To compare:
 ---
 
 Configuration
------------
+-------------
 
 Plot appearance is controlled by the ``plot`` section in the config:
 
@@ -306,27 +319,38 @@ and exposes all parameters as interactive widgets.
 
 **Widgets (``plot_helper.ipynb``):**
 
-+-------------------+--------------------------+-----------------------------------------------------+
-| Widget            | Default                  | Description                                         |
-+===================+==========================+=====================================================+
-| Mode              | heatmap                  | Switch between heatmap and lines                    |
-+-------------------+--------------------------+-----------------------------------------------------+
-| Array             | original                 | Raw array or template-normalized array (if present) |
-+-------------------+--------------------------+-----------------------------------------------------+
-| Metric            | specMedian               | Stacked statistic to overlay on the heatmap         |
-+-------------------+--------------------------+-----------------------------------------------------+
-| Norm factors      | off                      | Overlay per-spectrum normalization factors           |
-|                   |                          | as scatter on a right axis                          |
-+-------------------+--------------------------+-----------------------------------------------------+
-| Max spectra       | 0 (all)                  | Subsample N random spectra (useful for large stacks)|
-+-------------------+--------------------------+-----------------------------------------------------+
-| Line alpha        | 0.05                     | Opacity per trace in lines mode                     |
-+-------------------+--------------------------+-----------------------------------------------------+
-| X bins            | n_pixels                 | Wavelength bins; default = one bin per original     |
-|                   |                          | pixel (pixel-exact, no redistribution)              |
-+-------------------+--------------------------+-----------------------------------------------------+
-| Y bins            | 200                      | Flux bins                                           |
-+-------------------+--------------------------+-----------------------------------------------------+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 25 55
+
+   * - Widget
+     - Default
+     - Description
+   * - Mode
+     - heatmap
+     - Switch between heatmap and lines
+   * - Array
+     - original
+     - Raw array or template-normalized array (if present)
+   * - Metric
+     - specMedian
+     - Stacked statistic to overlay on the heatmap
+   * - Norm factors
+     - off
+     - Overlay per-spectrum normalization factors as scatter on a right axis
+   * - Max spectra
+     - 0 (all)
+     - Subsample N random spectra (useful for large stacks)
+   * - Line alpha
+     - 0.05
+     - Opacity per trace in lines mode
+   * - X bins
+     - n_pixels
+     - Wavelength bins; default = one bin per original pixel
+       (pixel-exact, no redistribution)
+   * - Y bins
+     - 200
+     - Flux bins
 
 **Binning and physical correctness:**
 
@@ -371,12 +395,4 @@ and are distinguishable from rendering artefacts.
 
       <SURVEY>_<GRISMS>_<DR>_<CATALOG>_<ZCOL>_<NORM>[_<L0>-<L1>]_s<SIGMA>_<PXTOKEN>_<HASH8>.fits
 
----
 
-API Reference
--------------
-
-.. automodule:: spectraPyle.plot.plot
-   :members: plotting, plot_h5_heatmap, read_fits_and_select_columns, get_header
-   :undoc-members:
-   :show-inheritance:

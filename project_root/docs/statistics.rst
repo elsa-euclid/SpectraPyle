@@ -268,17 +268,25 @@ Percentiles
 
 Distribution quantiles at fixed levels:
 
-+--------+-------------------------+---------+
-| Column | Percentile level        | Alias   |
-+========+=========================+=========+
-| spec16th    | 15.87th             | −1σ     |
-+--------+-------------------------+---------+
-| spec84th    | 84.14th             | +1σ     |
-+--------+-------------------------+---------+
-| spec98th    | 97.73rd             | ~+2σ    |
-+--------+-------------------------+---------+
-| spec99th    | 99.73rd             | ~+3σ    |
-+--------+-------------------------+---------+
+.. list-table::
+   :header-rows: 1
+   :widths: 35 40 25
+
+   * - Column
+     - Percentile level
+     - Alias
+   * - ``spec16th``
+     - 15.87th
+     - −1σ
+   * - ``spec84th``
+     - 84.14th
+     - +1σ
+   * - ``spec98th``
+     - 97.73rd
+     - ~+2σ
+   * - ``spec99th``
+     - 99.73rd
+     - ~+3σ
 
 **Use:**
 - Inspect distribution shape and tails
@@ -320,28 +328,29 @@ Uses closed-form formulas based on data dispersion and sample size:
 Summary Table: When to Use Each Statistic
 ------------------------------------------
 
-+---------------------+------------------------------------------+---------------------------------------------+
-| Statistic           | Best for                                 | Avoid when                                  |
-+=====================+==========================================+=============================================+
-| Mean                | Symmetric, outlier-free distributions   | Heavy-tailed or bimodal distributions       |
-+---------------------+------------------------------------------+---------------------------------------------+
-| Median              | Outliers present; robustness required   | Distribution shape not important            |
-+---------------------+------------------------------------------+---------------------------------------------+
-| Geom. Mean (lenient)| Ratio quantities; partial positivity OK | Need strict positivity everywhere            |
-+---------------------+------------------------------------------+---------------------------------------------+
-| Geom. Mean (strict) | Ratio quantities; strict positivity     | Missing/zero values in sample               |
-+---------------------+------------------------------------------+---------------------------------------------+
-| Mode (HSM)          | Peak-finding; non-parametric estimate  | Highly multimodal distributions             |
-+---------------------+------------------------------------------+---------------------------------------------+
-| Weighted Mean       | Heterogeneous quality; weights reliable | Weights poorly characterized                 |
-+---------------------+------------------------------------------+---------------------------------------------+
+.. list-table::
+   :header-rows: 1
+   :widths: 25 40 35
 
----
+   * - Statistic
+     - Best for
+     - Avoid when
+   * - Mean
+     - Symmetric, outlier-free distributions
+     - Heavy-tailed or bimodal distributions
+   * - Median
+     - Outliers present; robustness required
+     - Distribution shape not important
+   * - Geom. Mean (lenient)
+     - Ratio quantities; partial positivity OK
+     - Need strict positivity everywhere
+   * - Geom. Mean (strict)
+     - Ratio quantities; strict positivity
+     - Missing/zero values in sample
+   * - Mode (HSM)
+     - Peak-finding; non-parametric estimate
+     - Highly multimodal distributions
+   * - Weighted Mean
+     - Heterogeneous quality; weights reliable
+     - Weights poorly characterized
 
-API Reference
--------------
-
-.. automodule:: spectraPyle.statistic.statistics
-   :members:
-   :undoc-members:
-   :show-inheritance:

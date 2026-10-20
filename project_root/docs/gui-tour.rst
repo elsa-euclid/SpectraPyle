@@ -17,11 +17,11 @@ When you first open the SpectraPyle GUI, you will see a layout with several key 
    :width: 100%
    :align: center
 
-   *Figure 1: The SpectraPyle GUI layout, featuring the "Load Existing Config" section at the top, tabbed parameter panels in the center, and the "Run" and "Export Config" buttons at the bottom.*
+   The SpectraPyle GUI layout, featuring the "Load Existing Config" section at the top, tabbed parameter panels in the center, and the "Run" and "Export Config" buttons at the ``bottom.*``
 
 The GUI is organized as follows:
 
-- **Top Section**: A "Load Existing Config" file browser. Use this to upload an existing path/to/configs/GUI/*.gui configuration file to pre-populate all widgets. Alternatively, leave it empty and build your config from scratch.
+- **Top Section**: A "Load Existing Config" file browser. Use this to upload an existing ``path/to/configs/GUI/*.gui`` configuration file to pre-populate all widgets. Alternatively, leave it empty and build your config from scratch.
 
 - **Tabbed Panels**: Four main tabs organize configuration parameters:
 
@@ -47,7 +47,7 @@ The **Instrument** tab lets you select the survey, instrument type, and associat
    :width: 100%
    :align: center
 
-   *Figure 2: The Instrument tab allows you to select Euclid, DESI, or Generic, choose grisms/slits, and specify the data release.*
+   The Instrument tab allows you to select Euclid, DESI, or Generic, choose grisms/slits, and specify the data release.*
 
 Key controls in this tab:
 
@@ -79,7 +79,7 @@ The **Input/Output** tab configures where the pipeline finds your spectra and wh
    :width: 100%
    :align: center
 
-   *Figure 3: The Input/Output tab for selecting catalogues, spectra directories, and output paths.*
+   The Input/Output tab for selecting catalogues, spectra directories, and output ``paths.*``
 
 Key controls in this tab:
 
@@ -107,7 +107,7 @@ The **Catalogue** tab defines how the pipeline interprets your catalogue file an
    :width: 100%
    :align: center
 
-   *Figure 4: The Catalogue tab for mapping object ID, redshift, and metadata columns.*
+   The Catalogue tab for mapping object ID, redshift, and metadata ``columns.*``
 
 Key controls in this tab:
 
@@ -141,7 +141,7 @@ The **Stack Parameters** tab groups all stacking-specific settings: redshift han
    :width: 100%
    :align: center
 
-   *Figure 5: The Stack Parameters tab for configuring redshift, normalization, resampling, wavelength range, and cosmological parameters.*
+   The Stack Parameters tab for configuring redshift, normalization, resampling, wavelength range, and cosmological parameters.*
 
 This tab is organized into five collapsible sections:
 

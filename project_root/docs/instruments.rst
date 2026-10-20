@@ -191,15 +191,18 @@ DESI (Back-Compatibility)
 
 DESI spectra use lowercase, strictly-matched column names. **No aliases are supported:**
 
-+-----------+----------+
-| Quantity  | Column   |
-+===========+==========+
-| Wavelength| ``wavelength`` |
-+-----------+----------+
-| Flux      | ``flux`` |
-+-----------+----------+
-| Error     | ``noise`` (already sigma, not variance) |
-+-----------+----------+
+.. list-table::
+   :header-rows: 1
+   :widths: 25 75
+
+   * - Quantity
+     - Column
+   * - Wavelength
+     - ``wavelength``
+   * - Flux
+     - ``flux``
+   * - Error
+     - ``noise`` (already sigma, not variance)
 
 **Limitations**
 
@@ -262,17 +265,22 @@ If none of these work, set ``lambda_edges`` in your config (see below).
 
 Column auto-detection (first match wins):
 
-+-------------------+--------------------------------------+
-| Physical quantity | Column alias chain                   |
-+===================+======================================+
-| Wavelength        | ``wavelength`` → ``WAVE`` → ``LAMBDA`` |
-|                   | (or WCS reconstruction if none found)|
-+-------------------+--------------------------------------+
-| Flux              | ``flux`` → ``FLUX`` → ``SIGNAL``     |
-+-------------------+--------------------------------------+
-| Error             | ``error`` → ``ERROR`` → ``NOISE``    |
-|                   | → ``VAR`` (VAR is sqrt'd)            |
-+-------------------+--------------------------------------+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 70
+
+   * - Physical quantity
+     - Column alias chain
+   * - Wavelength
+     - ``wavelength`` → ``WAVE`` → ``LAMBDA``
+
+       (or WCS reconstruction if none found)
+   * - Flux
+     - ``flux`` → ``FLUX`` → ``SIGNAL``
+   * - Error
+     - ``error`` → ``ERROR`` → ``NOISE`` → ``VAR``
+
+       (``VAR`` is square-rooted)
 
 **1-D Image HDU Format**
 

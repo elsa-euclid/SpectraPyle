@@ -553,9 +553,9 @@ def plot_h5_heatmap(h5_path, fits_path, template_array='norm',
     Parameters
     ----------
     h5_path : str or Path
-        Path to *_array.h5 file.
+        Path to ``*_array.h5`` file.
     fits_path : str or Path
-        Path to the companion *_STACKING.fits file (metrics read from here).
+        Path to the companion ``*_STACKING.fits`` file (metrics read from here).
     template_array : {'norm', 'original'}
         If 'norm' and stackArr_norm exists in H5, use it; else use stackArr.
     metric : str

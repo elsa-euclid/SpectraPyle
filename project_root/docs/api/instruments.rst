@@ -16,10 +16,11 @@ Euclid
 DESI
 ----
 
-.. deprecated::
+.. note::
 
-   The DESI driver is maintained for back-compatibility with Euclid–DESI crossmatched
-   samples and is not under active development. For new workflows consider the Generic driver.
+   The DESI driver is maintained for backward compatibility with Euclid–DESI
+   crossmatched samples and is not under active development. For new workflows,
+   consider the Generic driver.
 
 .. automodule:: spectraPyle.instruments.desi
    :members:

@@ -1,15 +1,17 @@
 """
-Widgets / JSON / CLI
-        ↓
-normalize_raw_config    (flat → structured)
-        ↓
-StackingConfig          (validation)
-        ↓
-StackingConfigResolver  (rules + defaults)
-        ↓
-FINAL CONFIG (typed, stable)
-        ↓
-stack.run()
+Configuration flow::
+
+    Widgets / JSON / CLI
+            ↓
+    normalize_raw_config    (flat → structured)
+            ↓
+    StackingConfig          (validation)
+            ↓
+    StackingConfigResolver  (rules + defaults)
+            ↓
+    FINAL CONFIG (typed, stable)
+            ↓
+    stack.run()
 """
 
 from pydantic import BaseModel, Field, field_validator, model_validator
