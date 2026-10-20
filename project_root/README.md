@@ -13,6 +13,8 @@ scientific analysis.
 
 **Supported instruments:** Euclid (NISP, grisms `red`/`blue`) · DESI (`merged`, back-compatibility only) · Generic (any standard FITS, grism `default`)
 
+**Documentation:** Full documentation, tutorials, configuration reference, and API documentation are available on [Read the Docs](https://spectrapyle.readthedocs.io/).
+
 ---
 
 ## Quick Start
@@ -337,6 +339,8 @@ spectrapyle --config path/to/default.yaml
 ```
 
 ### Generate documentation locally
+
+The latest documentation is built automatically on Read the Docs after updates to the repository. To build and preview it locally:
 
 ```bash
 cd docs
