@@ -13,6 +13,8 @@ scientific analysis.
 
 **Supported instruments:** Euclid (NISP, grisms `red`/`blue`) · DESI (`merged`, back-compatibility only) · Generic (any standard FITS, grism `default`)
 
+**Documentation:** Full documentation, tutorials, configuration reference, and API documentation are available on [Read the Docs](https://spectrapyle.readthedocs.io/).
+
 ---
 
 ## Quick Start
@@ -126,12 +128,34 @@ Stacking(flat_dict).run()     stacking/stacking.py
 | `instrument` | `instrument_name` (`euclid`/`desi`/`generic`), `grisms` list |
 | `io` / `grism_io` | Input catalog, output dir, per-grism spectra paths |
 | `redshift` | `z_type` (`rest_frame`, `observed_frame`, `custom`, …), `z_value` |
-| `norm` | Normalization method and wavelength range |
+| `norm` | Scalar normalization plus optional continuum normalization |
 | `resampling` | Pixel grid type and size |
 | `sigmaclip` | Sigma-clipping thresholds |
 | `bootstrap` | Bootstrap uncertainty estimation |
 | `parallel` | Multiprocessing CPU fraction |
 | `plot` | Plotly output options |
+
+### Optional continuum normalization
+
+Continuum normalization is a separate, instrument-independent preprocessing
+step. It fits each individual spectral segment before resampling and divides the
+flux and error by the fitted smooth continuum.
+
+```yaml
+norm:
+  spectra_normalization: median
+  continuum_normalize: true
+  continuum_norm_order: 2
+  continuum_mask_features: true
+  continuum_emission_mask_half_width: 12.0
+  continuum_sigma_clip: 3.0
+```
+
+The scalar normalization does not change the intrinsic EW of an individual
+spectrum. Continuum normalization instead removes smooth spectral-shape
+differences before stacking; this can be useful for absorption-line work but
+does not imply that an EW measured on the final stack is exactly the mean of
+individual EWs. See `docs/normalization.rst` for details and caveats.
 
 ### Multi-grism
 
@@ -316,6 +340,8 @@ spectrapyle --config path/to/default.yaml
 
 ### Generate documentation locally
 
+The latest documentation is built automatically on Read the Docs after updates to the repository. To build and preview it locally:
+
 ```bash
 cd docs
 make html
@@ -368,8 +394,8 @@ For the full APA reference and detailed acknowledgment requirements, see [Citati
 - Lucia Pozzetti
 - Margherita Talia 
 - Zhiying Mao
-- Marcel Lindmeir
 - Xavier Lopez Lopez
+- Marcel Lindmeir
 - Elisabeta Lusso 
 - Sotiria Fotopoulou
 - Michele Moresco
