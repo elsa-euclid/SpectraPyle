@@ -1,0 +1,62 @@
+{
+  "gui_state": {
+    "input_dir": "../tests/INDIVIDUAL_FITS",
+    "output_dir": "../tests/INDIVIDUAL_FITS/outputs/",
+    "filename_in": "catalog_list",
+    "filename_in_extention": "csv",
+    "filename_out": "AUTO",
+    "spectra_mode": "individual fits",
+    "ID_column_name": "object_id",
+    "redshift_column_name": "spe_z",
+    "galactic_extinction": false,
+    "gal_ext_column_name": "",
+    "custom_column_name": "",
+    "metadata_path_column_name": "",
+    "metadata_file_column_name": "",
+    "metadata_indx_column_name": "",
+    "instrument_name": "euclid",
+    "survey_name": "wide",
+    "grisms": [
+      "red"
+    ],
+    "grism_io": {
+      "red": {
+        "spectra_dir": "../tests/INDIVIDUAL_FITS",
+        "spectra_datafile": ""
+      }
+    },
+    "data_release": "Q1",
+    "cosmo_H0": 70.0,
+    "cosmo_Om0": 0.3,
+    "z_type": "rest_frame",
+    "z_value": 0.0,
+    "spectra_normalization": "median",
+    "conservation": null,
+    "spectrum_edges": [
+      75,
+      -75
+    ],
+    "lambda_edges_rest": null,
+    "interval_norm_statistics": null,
+    "lambda_norm_rest": null,
+    "pixel_resampling_type": "lambda",
+    "pixel_size_type": "instrumental",
+    "pixel_resampling": null,
+    "nyquist_sampling": 5.0,
+    "sigma_clipping_conditions": 3.0,
+    "bootstrapping_R": 300,
+    "pixel_mask": [
+      0,
+      6
+    ],
+    "n_min_dithers": 3,
+    "multiprocessing": true,
+    "max_cpu_fraction": 0.9,
+    "plot_results": true,
+    "continuum_normalize": false,
+    "continuum_norm_order": 2,
+    "continuum_mask_features": true,
+    "continuum_emission_mask_half_width": 12.0,
+    "continuum_sigma_clip": 3.0
+  }
+}

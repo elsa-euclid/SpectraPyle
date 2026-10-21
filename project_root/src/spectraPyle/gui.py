@@ -23,6 +23,7 @@ import threading
 import time
 import traceback
 from pathlib import Path
+import shutil
 
 import ipywidgets as w
 from IPython.display import display, clear_output
@@ -42,7 +43,15 @@ from spectraPyle.schema.schema import StackingConfig, StackingConfigResolver
 # Module-level constants
 # ---------------------------------------------------------------------------
 
-PACKAGE_ROOT = Path(stsp.__file__).parent.parent.parent
+# Resources distributed with SpectraPyle (read-only)
+PACKAGE_DIR = Path(__file__).resolve().parent
+
+# User/project configuration files (read/write)
+USER_CONFIG_ROOT = Path.cwd() / "configs"
+
+# Default GUI
+DEFAULT_GUI_CONFIG = PACKAGE_DIR / "defaults" / "GUI" / "default.gui"
+
 
 MODE_INDIVIDUAL = "individual fits"
 MODE_METADATA = "metadata path"
@@ -1181,7 +1190,16 @@ Higher is better.<br><br> Note: Euclid Q1 max dithers = 4 (recommended ≥ 2).
     # Load / restore from .gui file
     # -----------------------------------------------------------------------
 
-    path_to_config_dir = PACKAGE_ROOT / "configs" / "GUI"
+    # User GUI configurations live in the current working directory.
+    # Create the directory if it does not exist yet.
+    path_to_config_dir = USER_CONFIG_ROOT / "GUI"
+    path_to_config_dir.mkdir(parents=True, exist_ok=True)
+
+    default_gui_target = path_to_config_dir / "default.gui"
+    
+    if not default_gui_target.exists():
+        shutil.copy2(DEFAULT_GUI_CONFIG, default_gui_target)
+	    
     validation_load_gui = w.Output()
 
     load_GUI_fc = FileChooser(
@@ -1530,7 +1548,7 @@ Higher is better.<br><br> Note: Euclid Q1 max dithers = 4 (recommended ≥ 2).
 
     def on_export_GUI(_):
         export_GUI_output.clear_output()
-        gui_dir = PACKAGE_ROOT / "configs" / "GUI"
+        gui_dir = USER_CONFIG_ROOT / "GUI"
         gui_dir.mkdir(parents=True, exist_ok=True)
         try:
             cfg, err = run_validation()
@@ -1571,7 +1589,7 @@ Higher is better.<br><br> Note: Euclid Q1 max dithers = 4 (recommended ≥ 2).
 
     def on_export_JSON(_):
         export_JSON_output.clear_output()
-        json_dir = PACKAGE_ROOT / "configs" / "JSON"
+        json_dir = USER_CONFIG_ROOT / "JSON"
         json_dir.mkdir(parents=True, exist_ok=True)
         try:
             cfg, err = run_validation()
@@ -1599,7 +1617,7 @@ Higher is better.<br><br> Note: Euclid Q1 max dithers = 4 (recommended ≥ 2).
 
     def on_export_YAML(_):
         export_YAML_output.clear_output()
-        yaml_dir = PACKAGE_ROOT / "configs" / "YAML"
+        yaml_dir = USER_CONFIG_ROOT / "YAML"
         yaml_dir.mkdir(parents=True, exist_ok=True)
         try:
             cfg, err = run_validation()

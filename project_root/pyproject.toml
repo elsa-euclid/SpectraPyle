@@ -13,7 +13,8 @@ readme = "README.md"
 authors = [
     { name = "Salvatore Quai", email = "salvatore.quai@unibo.it" }
 ]
-license = { text = "MIT" }
+
+license = "MIT"
 requires-python = ">=3.9"
 
 keywords = ["astronomy", "spectroscopy", "stacking", "astrophysics"]
@@ -23,7 +24,6 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Topic :: Scientific/Engineering :: Astronomy",
 ]
@@ -46,6 +46,12 @@ dependencies = [
     "dash>=2.0",
 ]
 
+[project.urls]
+Homepage = "https://github.com/squai/SpectraPyle"
+Documentation = "https://spectrapyle.readthedocs.io/"
+Repository = "https://github.com/squai/SpectraPyle"
+Issues = "https://github.com/squai/SpectraPyle/issues"
+
 # =========================================================
 # OPTIONAL DEPENDENCIES (VERY IMPORTANT)
 # =========================================================
@@ -57,6 +63,7 @@ notebook = [
     "ipython>=8.0",
     "ipyfilechooser>=0.6",
     "voila>=0.5.11",
+    "jupyterlab>=4.0",
 ]
 
 # Dev tools
@@ -80,6 +87,7 @@ all = [
     "ipython>=8.0",
     "ipyfilechooser>=0.6",
     "voila>=0.5.11",
+    "jupyterlab>=4.0",
     "pytest",
     "black",
     "ruff",
@@ -107,7 +115,8 @@ where = ["src"]
 [tool.setuptools.package-data]
 "spectraPyle" = [
     "instruments/*.json",
-    "tables/*.csv"
+    "tables/*.csv",
+    "defaults/GUI/*.gui"
 ]
 
 # =========================================================

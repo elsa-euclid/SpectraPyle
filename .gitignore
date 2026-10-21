@@ -57,6 +57,9 @@ project_root/tests/**/output*/
 # =========================
 *.gui
 
+# Package default GUI configuration
+!project_root/src/spectraPyle/defaults/GUI/default.gui
+
 # Ignore generic JSON/YAML user-generated configs
 *.json
 *.yaml
