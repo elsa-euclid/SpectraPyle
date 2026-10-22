@@ -113,6 +113,7 @@ where = ["src"]
     "instruments/*.json",
     "tables/*.csv",
     "defaults/GUI/*.gui",
+    "example_data/README.md",
     "example_data/INDIVIDUAL_FITS/*.fits",
     "example_data/INDIVIDUAL_FITS/*.csv",
 ]
