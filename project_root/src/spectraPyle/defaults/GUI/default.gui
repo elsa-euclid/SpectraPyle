@@ -1,7 +1,7 @@
 {
   "gui_state": {
-    "input_dir": "../tests/INDIVIDUAL_FITS",
-    "output_dir": "../tests/INDIVIDUAL_FITS/outputs/",
+    "input_dir": "$SPECTRAPYLE_EXAMPLE_DATA/INDIVIDUAL_FITS",
+    "output_dir": "./outputs",
     "filename_in": "catalog_list",
     "filename_in_extention": "csv",
     "filename_out": "AUTO",
@@ -21,7 +21,7 @@
     ],
     "grism_io": {
       "red": {
-        "spectra_dir": "../tests/INDIVIDUAL_FITS",
+        "spectra_dir": "$SPECTRAPYLE_EXAMPLE_DATA/INDIVIDUAL_FITS",
         "spectra_datafile": ""
       }
     },

@@ -9,21 +9,6 @@ and writes the result as a two-HDU FITS file.
 Entry point: :func:`main`.
 """
 
-# -------------- spectraPyle --------------- #
-__author__ = "Salvatore Quai"
-__credits__ = ["Salvatore Quai",
-"Lucia Pozzetti",
-"Michele Moresco",
-"Margherita Talia",
-"Zhiying Mao",
-"Xavier Lopez Lopez",
-"Elisabeta Lusso",
-"Sotiria Fotopoulou"]
-__version__ = "5.0.2"
-__maintainer__ = "Salvatore Quai"
-__email__ = "salvatore.quai@unibo.it"
-__status__ = "Developement"
-
 # -------------- Packages --------------
 import os
 import os.path
@@ -42,8 +27,8 @@ from astropy.cosmology import FlatLambdaCDM
 
 from multiprocessing import Pool
 
+from spectraPyle import __version__
 import spectraPyle
-importlib.reload(spectraPyle)
 
 from spectraPyle.schema.schema import StackingConfig, StackingConfigResolver
 from spectraPyle.runtime.runtime_adapter import (

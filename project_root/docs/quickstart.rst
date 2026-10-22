@@ -4,41 +4,34 @@ Quick Start
 Installation
 ------------
 
-For GUI/Jupyter usage (recommended for most users):
+Install the latest stable release from PyPI:
 
 .. code-block:: bash
 
-   git clone https://github.com/squai/SpectraPyle
-   cd SpectraPyle/project_root
-   pip install -e ".[notebook]"
+   pip install spectraPyle
 
-The ``notebook`` extra installs the dependencies required by the ipywidgets GUI and
-by the local Voilà launcher. For core/CLI-only usage, ``pip install -e .`` is
-sufficient.
+This installs SpectraPyle together with the dependencies required by its
+interactive GUI.
 
-Once installed, SpectraPyle is available as a standard Python package and can be
-imported from your own notebooks or Python scripts. The notebooks shipped with the
-repository are convenience/tutorial interfaces rather than a requirement for using
-the package.
-
-Local GUI via Voilà
--------------------
-
-On a local machine, the convenience launcher starts a Voilà server and opens the GUI
-in your default browser:
+If you also need a local JupyterLab environment and Voilà, install the
+``notebook`` extras:
 
 .. code-block:: bash
 
-   python notebooks/run_gui.py
+   pip install "spectraPyle[notebook]"
 
-If the browser does not open automatically, use the local URL printed in the terminal.
-Press ``Ctrl+C`` in the terminal to stop the server.
+For development or an editable installation from the source repository, see
+the development documentation.
 
-JupyterLab / ESA DataLabs
--------------------------
+Try SpectraPyle immediately
+---------------------------
 
-In Jupyter environments, including ESA DataLabs, the same GUI can be rendered directly
-inside a notebook cell, without Voilà or a separate browser window:
+SpectraPyle includes a ready-to-use sample of 100 Euclid NISP Q1 spectra,
+together with a pre-configured ``default.gui``. This quick-start sample is
+intended for users who want to see the complete stacking workflow and its
+output immediately, before configuring their own data.
+
+In a Jupyter notebook, launch the GUI with:
 
 .. code-block:: python
 
@@ -46,9 +39,61 @@ inside a notebook cell, without Voilà or a separate browser window:
 
    start()
 
-Alternatively, open ``notebooks/gui_launcher.ipynb``, which contains the same minimal
-launcher. ESA DataLabs users should run the notebook with the ``EUCLID-TOOLS`` kernel;
-see :doc:`datalabs` for the DataLabs-specific workflow.
+When SpectraPyle is launched for the first time in a working directory, it
+creates:
+
+.. code-block:: text
+
+   configs/GUI/default.gui
+
+Load this configuration from the GUI and run SpectraPyle. The bundled catalogue
+and example spectra are located automatically, so no input paths need to be
+configured.
+
+The example performs a complete stack of the supplied Euclid spectra and
+generates the standard SpectraPyle outputs, including the interactive
+stacked-spectrum visualization.
+
+The example data are installed as read-only package resources and are not
+copied into your project directory. Output files are instead written to the
+local ``./outputs`` directory.
+
+Once you have verified the workflow, you can modify the GUI configuration for
+your own catalogue and spectra and save project-specific GUI, JSON, or YAML
+configurations under ``./configs/``.
+
+Jupyter GUI
+-----------
+
+The GUI can be launched directly from any Jupyter environment:
+
+.. code-block:: python
+
+   from spectraPyle.gui import start
+
+   start()
+
+The interface is rendered directly inside the notebook using ``ipywidgets``;
+no local server or separate browser window is required.
+
+ESA DataLabs users can use the same interface directly from a notebook. For
+Euclid internal data and the DataLabs-specific workflow, see :doc:`datalabs`.
+
+Local GUI via Voilà
+-------------------
+
+For a standalone local Voilà interface, the source repository also provides:
+
+.. code-block:: bash
+
+   python notebooks/run_gui.py
+
+This requires SpectraPyle to be installed from the source repository with the
+``notebook`` extras.
+
+The launcher starts a Voilà server and opens the GUI in your default browser.
+If the browser does not open automatically, use the local URL printed in the
+terminal. Press ``Ctrl+C`` in the terminal to stop the server.
 
 Running via CLI
 ---------------
@@ -59,14 +104,15 @@ After installation, the standard command-line entry point is:
 
    spectrapyle --config path/to/config.yaml
 
-A helper script is also available:
+When working from the source repository, a helper script is also available:
 
 .. code-block:: bash
 
    python notebooks/run_cli.py --config path/to/config.yaml [--log-level INFO]
 
-The helper provides automatic timestamped logging and supports YAML/JSON configuration
-files. Available log levels include ``DEBUG``, ``INFO``, and ``WARNING``.
+The helper provides automatic timestamped logging and supports YAML/JSON
+configuration files. Available log levels include ``DEBUG``, ``INFO``, and
+``WARNING``.
 
 Override individual configuration keys at runtime, for example:
 
@@ -77,23 +123,41 @@ Override individual configuration keys at runtime, for example:
 Post-stacking Analysis
 ----------------------
 
-**Plot Helper** — Visualize the stacked spectrum:
+**Stacked spectrum** — SpectraPyle automatically generates an interactive
+Plotly visualization of the final stack after a successful run.
 
-.. code-block:: bash
+The plotting function can also be called directly:
 
-   jupyter notebook notebooks/plot_helper.ipynb
+.. code-block:: python
 
-Interactive notebook showing all estimators (mean, median, geometric mean, weighted mean)
-and pixel count information.
+   from spectraPyle.plot.plot import plotting
 
-**Spectral Line Manager** — Configure spectral lines in plots:
+   plotting("result_STACKING.fits", width=1200, height=700)
 
-.. code-block:: bash
+**2D spectral distribution** — The intermediate HDF5 file stores the full
+matrix of individual resampled spectra before combination. It can be explored
+with ``plot_h5_heatmap()``:
 
-   jupyter notebook notebooks/line_manager.ipynb
+.. code-block:: python
 
-Enable/disable emission lines and absorption features via checkboxes. Saved settings are
-picked up by the next ``plotting()`` call.
+   from spectraPyle.plot.plot import plot_h5_heatmap
+
+   fig = plot_h5_heatmap(
+       h5_path="result_array.h5",
+       fits_path="result_STACKING.fits",
+       metric="specMedian",
+       mode="heatmap",
+   )
+
+   fig.show()
+
+When working from the source repository, the supplied
+``notebooks/plot_helper.ipynb`` provides an interactive interface to the same
+visualization tools.
+
+**Spectral Line Manager** — When working from the source repository,
+``notebooks/line_manager.ipynb`` can be used to enable or disable emission
+lines and absorption features displayed by the plotting routines.
 
 Configuration Pipeline
 ----------------------

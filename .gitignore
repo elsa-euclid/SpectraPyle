@@ -49,6 +49,9 @@ project_root/docs/_build/
 # Keep FITS files explicitly used by the tests
 !project_root/tests/**/*.fits
 
+# Keep packaged quick-start example spectra
+!project_root/src/spectraPyle/example_data/INDIVIDUAL_FITS/*.fits
+
 # Ignore generated test outputs, but NOT the tests themselves
 project_root/tests/**/output*/
 

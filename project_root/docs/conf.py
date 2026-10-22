@@ -1,12 +1,13 @@
 import os
 import sys
+from importlib.metadata import version
 
 sys.path.insert(0, os.path.abspath("../src"))
 
 project = "SpectraPyle"
 copyright = "2024, Salvatore Quai"
 author = "Salvatore Quai"
-release = "5.0.2"
+release = version("spectraPyle")
 
 extensions = [
     "sphinx.ext.autodoc",

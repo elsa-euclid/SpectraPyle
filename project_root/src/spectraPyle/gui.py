@@ -52,6 +52,8 @@ USER_CONFIG_ROOT = Path.cwd() / "configs"
 # Default GUI
 DEFAULT_GUI_CONFIG = PACKAGE_DIR / "defaults" / "GUI" / "default.gui"
 
+# Sample test
+EXAMPLE_DATA_DIR = PACKAGE_DIR / "example_data"
 
 MODE_INDIVIDUAL = "individual fits"
 MODE_METADATA = "metadata path"
@@ -64,6 +66,23 @@ INSTRUMENT_EXTRA_QC = {
     "desi": {"bad_pixels": False, "dithers": False},
 }
 
+# ---------------------------------------------------------------------------
+# Sample data directory helpers
+# ---------------------------------------------------------------------------
+
+
+def resolve_spectrapyle_path(path):
+    """Resolve special SpectraPyle paths stored in configuration files."""
+    if not isinstance(path, str):
+        return path
+
+    token = "$SPECTRAPYLE_EXAMPLE_DATA"
+
+    if path.startswith(token):
+        relative_path = path[len(token):].lstrip("/\\")
+        return str(EXAMPLE_DATA_DIR / relative_path)
+
+    return path
 
 # ---------------------------------------------------------------------------
 # Module-level helpers (no widget state)
@@ -1282,8 +1301,12 @@ Higher is better.<br><br> Note: Euclid Q1 max dithers = 4 (recommended ≥ 2).
             update_catalogue_columns()
 
             # Phase 3 — dependent values
+            input_dir = resolve_spectrapyle_path(
+                cfg.get("input_dir", "")
+            )
+
             sync_catalogue_to_ui(
-                cfg.get("input_dir", ""),
+                input_dir,
                 cfg.get("filename_in", ""),
                 cfg.get("filename_in_extention", "csv"),
             )
@@ -1295,7 +1318,11 @@ Higher is better.<br><br> Note: Euclid Q1 max dithers = 4 (recommended ≥ 2).
                 cb.value = g in saved_grisms
             for g, wdg in grism_dir_widgets.items():
                 gcfg = saved_grism_io.get(g, {})
-                val = str(gcfg.get("spectra_dir", "") or "").strip()
+                
+                val = resolve_spectrapyle_path(
+                    str(gcfg.get("spectra_dir", "") or "").strip()
+                )
+
                 if val:
                     wdg["text"].value = val
                     try:
@@ -1309,7 +1336,11 @@ Higher is better.<br><br> Note: Euclid Q1 max dithers = 4 (recommended ≥ 2).
                 val = str(gcfg.get("spectra_datafile", "") or "").strip()
                 if val:
                     wdg["file_text"].value = val
-                    dir_val = str(saved_grism_io.get(g, {}).get("spectra_dir", "") or "").strip()
+                    
+                    dir_val = resolve_spectrapyle_path(
+                        str(saved_grism_io.get(g, {}).get("spectra_dir", "") or "").strip()
+                    )
+
                     full = str(Path(dir_val) / f"{val}.fits") if dir_val else val
                     try:
                         wdg["fc"]._selected_path = full

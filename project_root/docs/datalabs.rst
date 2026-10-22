@@ -20,13 +20,18 @@ This approach is ideal for stacking large samples where you want to avoid the ov
 Installation
 ------------
 
-Install SpectraPyle on DataLabs (if not already done) in the same environment used by your notebook:
+Install SpectraPyle on DataLabs from PyPI (if not already done) in the same environment used by your notebook:
 
 .. code-block:: bash
 
-   git clone https://github.com/squai/SpectraPyle
-   cd SpectraPyle/project_root
-   pip install -e ".[notebook]"
+   pip install spectraPyle
+
+The ``EUCLID-TOOLS`` environment already provides the Jupyter infrastructure
+needed to run SpectraPyle interactively, so no local JupyterLab installation is
+required.
+
+Once installed, SpectraPyle can be imported as a standard Python package from
+any notebook; no repository clone is required.
 
 Once installed, SpectraPyle can be imported as a standard Python package from any notebook
 or Python script; you do not need to run notebooks from inside the repository clone.

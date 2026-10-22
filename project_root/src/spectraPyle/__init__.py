@@ -25,5 +25,11 @@ utils
     Logging utilities.
 """
 
-__version__ = "5.0.2"
 __author__ = "Salvatore Quai"
+
+from importlib.metadata import PackageNotFoundError, version
+
+try:
+    __version__ = version("spectraPyle")
+except PackageNotFoundError:
+    __version__ = "unknown"

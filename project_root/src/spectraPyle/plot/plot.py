@@ -154,15 +154,13 @@ def plotting(output_filename, width=950, height=550):
     main_flux = flux_columns["specMedian"]  
     
     if redshift != 'observed_frame':
-        #module_dir = os.path.dirname(spectraPyle.__file__)
-        #em_line_table_path = os.path.join(module_dir, "tables", "emission_lines_vacuum_table.csv")
-        project_root = Path(spectraPyle.__file__).parent.parent.parent
-        em_line_table_path = project_root / "tables" / "emission_lines_vacuum_table.csv"
+        package_dir = Path(spectraPyle.__file__).resolve().parent
+        em_line_table_path = package_dir / "tables" / "emission_lines_vacuum_table.csv"
+
         add_line_markers(fig, em_line_table_path, spectral_axis_midpoints, main_flux, redshift, row=2, col=1)
 
         # addabsorption features:
-        #abs_feat_table_path = os.path.join(module_dir, "tables", "absorptions_table.csv")
-        abs_feat_table_path = project_root / "tables" / "absorptions_table.csv"
+        abs_feat_table_path = package_dir / "tables" / "absorptions_table.csv"
         add_absorption_features(fig, abs_feat_table_path, spectral_axis_midpoints, main_flux, redshift, row=2, col=1)
 
     for key in display_order:

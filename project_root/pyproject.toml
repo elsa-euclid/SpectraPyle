@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 # =========================================================
 [project]
 name = "spectraPyle"
-version = "5.0.2"
+version = "5.0.3"
 description = "A flexible and scalable tool for stacking astronomical spectra"
 readme = "README.md"
 authors = [
@@ -43,7 +43,9 @@ dependencies = [
     "pydantic>=2.0",
     "pyyaml>=6.0",
     "tqdm>=4.60",
-    "dash>=2.0",
+    "ipywidgets>=8.0",
+    "ipython>=8.0",
+    "ipyfilechooser>=0.6",
 ]
 
 [project.urls]
@@ -59,9 +61,6 @@ Issues = "https://github.com/squai/SpectraPyle/issues"
 
 # Jupyter / GUI usage
 notebook = [
-    "ipywidgets>=8.0",
-    "ipython>=8.0",
-    "ipyfilechooser>=0.6",
     "voila>=0.5.11",
     "jupyterlab>=4.0",
 ]
@@ -83,9 +82,6 @@ docs = [
 
 # Full install (everything)
 all = [
-    "ipywidgets>=8.0",
-    "ipython>=8.0",
-    "ipyfilechooser>=0.6",
     "voila>=0.5.11",
     "jupyterlab>=4.0",
     "pytest",
@@ -116,7 +112,9 @@ where = ["src"]
 "spectraPyle" = [
     "instruments/*.json",
     "tables/*.csv",
-    "defaults/GUI/*.gui"
+    "defaults/GUI/*.gui",
+    "example_data/INDIVIDUAL_FITS/*.fits",
+    "example_data/INDIVIDUAL_FITS/*.csv",
 ]
 
 # =========================================================

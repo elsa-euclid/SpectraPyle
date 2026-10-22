@@ -4,7 +4,7 @@
 
 ![Python](https://img.shields.io/badge/python-3.9%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
-![Version](https://img.shields.io/badge/version-5.0.2-orange)
+![PyPI](https://img.shields.io/pypi/v/spectraPyle)
 
 SpectraPyle is a flexible, scalable tool for stacking galaxy spectra. It shifts spectra
 to a common rest frame, normalizes, resamples, sigma-clips, and combines them using median,
@@ -21,29 +21,27 @@ scientific analysis.
 
 ### Install
 
-For GUI/Jupyter usage (recommended for most users):
+Install the latest stable release from PyPI:
 
 ```bash
-git clone https://github.com/squai/SpectraPyle
-cd SpectraPyle/project_root
-pip install -e ".[notebook]"
+pip install spectraPyle
 ```
 
-For core/CLI-only usage, `pip install -e .` is sufficient. Once installed, SpectraPyle is available as a standard Python package and can be imported from your own notebooks or Python scripts; the supplied notebooks are convenience/tutorial interfaces, not a requirement for using the package.
+This installs SpectraPyle together with the dependencies required by its interactive GUI.
 
-### Run via GUI (config builder)
-
-SpectraPyle provides the same GUI through two launch modes, depending on the environment.
-
-**Local machines — Voilà:**
+If you also need a local JupyterLab environment and Voilà, install the notebook extras:
 
 ```bash
-python notebooks/run_gui.py
+pip install "spectraPyle[notebook]"
 ```
 
-This starts a local Voilà server and opens the GUI in your default browser. If the browser does not open automatically, use the local URL printed in the terminal.
+For development or an editable installation from the source repository, see the [Development](#development) section below.
 
-**JupyterLab / ESA DataLabs — inline GUI:**
+### Try SpectraPyle immediately
+
+SpectraPyle includes a ready-to-use sample of 100 Euclid NISP Q1 spectra together with a pre-configured `default.gui`. This quick-start sample is intended for users who want to see the complete stacking workflow and its output immediately, before configuring their own data.
+
+In a Jupyter notebook, launch the GUI with:
 
 ```python
 from spectraPyle.gui import start
@@ -51,7 +49,41 @@ from spectraPyle.gui import start
 start()
 ```
 
-The GUI is rendered directly in the notebook cell, with no Voilà server or separate browser window required. Alternatively, open `notebooks/gui_launcher.ipynb`, which contains the same minimal launcher. On ESA DataLabs, use the **EUCLID-TOOLS** Jupyter kernel; see the [DataLabs guide](docs/datalabs.rst) for details.
+When SpectraPyle is launched for the first time in a working directory, it creates:
+
+```text
+configs/GUI/default.gui
+```
+
+Load this configuration from the GUI and run SpectraPyle. The bundled catalogue and example spectra are located automatically: no input paths need to be configured.
+
+The example performs a complete stack of the supplied Euclid spectra and generates the standard SpectraPyle outputs, including the interactive stacked-spectrum visualization.
+
+The example data are installed as read-only package resources and are not copied into your project directory. Output files are instead written to the local `./outputs` directory.
+
+Once you have verified the workflow, you can modify the GUI configuration for your own catalogue and spectra and save project-specific GUI, JSON, or YAML configurations under `./configs/`.
+
+### Run via GUI
+
+The GUI can be launched directly from any Jupyter environment:
+
+```python
+from spectraPyle.gui import start
+
+start()
+```
+
+It is rendered inline in the notebook using `ipywidgets`; no local server is required.
+
+On **ESA DataLabs**, SpectraPyle can therefore be used directly from a notebook. For Euclid internal data, see the [DataLabs documentation](https://spectrapyle.readthedocs.io/) for the dedicated workflow and configuration details.
+
+For a standalone local Voilà interface, the source repository also provides:
+
+```bash
+python notebooks/run_gui.py
+```
+
+when SpectraPyle has been installed from source with the notebook extras.
 
 ### Run via CLI
 
@@ -70,10 +102,11 @@ spectrapyle --config config.yaml --instrument.grisms '["red","blue"]'
 ### Minimal YAML config example
 
 ```yaml
-instrument_name: euclid
+instrument:
+  instrument_name: euclid
   survey_name: wide
   grisms:
-  - red
+    - red
   data_release: Q1
 
 io:
@@ -107,7 +140,7 @@ sigmaclip:
 
 Configs are YAML or JSON. All inputs pass through a strict validation pipeline:
 
-```
+```text
 Widgets / JSON / YAML / CLI
     ↓
 normalize_raw_config()        runtime/runtime_adapter.py  — empty strings→None, path coercion
@@ -116,7 +149,7 @@ StackingConfig (Pydantic v2)  schema/schema.py             — typed field-level
     ↓
 StackingConfigResolver        schema/schema.py             — cross-field rules, instrument defaults
     ↓
-flatten_schema_model()        runtime/runtime_adapter.py  — back to flat dict (legacy shim)
+flatten_schema_model()        runtime/runtime_adapter.py    — back to flat dict (legacy shim)
     ↓
 Stacking(flat_dict).run()     stacking/stacking.py
 ```
@@ -155,7 +188,7 @@ The scalar normalization does not change the intrinsic EW of an individual
 spectrum. Continuum normalization instead removes smooth spectral-shape
 differences before stacking; this can be useful for absorption-line work but
 does not imply that an EW measured on the final stack is exactly the mean of
-individual EWs. See `docs/normalization.rst` for details and caveats.
+individual EWs. See the full documentation for details and caveats.
 
 ### Multi-grism
 
@@ -226,28 +259,25 @@ After a run, SpectraPyle automatically generates an interactive Plotly figure wi
 ```python
 from spectraPyle.plot.plot import plotting
 
-fig = plotting('result_STACKING.fits', width=1200, height=700)
+plotting("result_STACKING.fits", width=1200, height=700)
 ```
 
 ### 2D flux distribution — H5 array viewer
 
-The intermediate HDF5 file (`*_array.h5`) stores the full matrix of individual resampled spectra before combination. Use `notebooks/plot_helper.ipynb` to inspect it interactively after a run:
+The intermediate HDF5 file (`*_array.h5`) stores the full matrix of individual resampled spectra before combination.
 
-1. Open `plot_helper.ipynb` in JupyterLab
-2. Set `name_stack` to your FITS output path — the notebook derives the H5 path automatically
-3. Use the widgets to explore: mode (`heatmap` / `lines`), metric overlay, bin resolution
-
-Or call the function directly:
+Use `plot_h5_heatmap()` to inspect the spectral distribution after a run:
 
 ```python
 from spectraPyle.plot.plot import plot_h5_heatmap
 
 fig = plot_h5_heatmap(
-    h5_path   = 'result_array.h5',
-    fits_path = 'result_STACKING.fits',
-    metric    = 'specMedian',
-    mode      = 'heatmap',   # or 'lines'
+    h5_path="result_array.h5",
+    fits_path="result_STACKING.fits",
+    metric="specMedian",
+    mode="heatmap",   # or "lines"
 )
+
 fig.show()
 ```
 
@@ -265,7 +295,7 @@ fig.show()
 
 > **DESI note:** The DESI driver is maintained for back-compatibility with Euclid–DESI crossmatched samples. It is not under active development. For new DESI-only workflows, consider using the Generic driver.
 
-> **ESA Datalabs users:** If you are working on the Datalabs platform with Euclid internal data, use `spectra_mode: metadata path` and map the three SIR catalogue columns (`datalabs_path`, `file_name`, `hdu_index`) to SpectraPyle's metadata configuration. Access to internal data releases requires Datalabs authentication. See the [ESA Datalabs guide](project_root/docs/datalabs.rst) for a complete walkthrough with example YAML configuration.
+> **ESA DataLabs users:** If you are working on the DataLabs platform with Euclid internal data, use `spectra_mode: metadata path` and map the three SIR catalogue columns (`datalabs_path`, `file_name`, `hdu_index`) to SpectraPyle's metadata configuration. Access to internal data releases requires DataLabs authentication. See the full documentation on [Read the Docs](https://spectrapyle.readthedocs.io/) for the complete workflow.
 
 ---
 
@@ -273,7 +303,7 @@ fig.show()
 
 ### Config pipeline
 
-```
+```text
 Widgets / JSON / YAML / CLI
     ↓
 normalize_raw_config()        runtime/runtime_adapter.py
@@ -293,9 +323,9 @@ Stacking(flat_dict).run()     stacking/stacking.py
 |---|---|
 | `schema/schema.py` | Pydantic models: `StackingConfig`, `StackingConfigResolver`. Instrument rules from `instruments_rules.json`. |
 | `runtime/runtime_adapter.py` | Input normalization, GUI→schema adapter, JSON/YAML loaders, version migration. |
-| `stacking/stacking.py` | `Stacking` class: orchestrates the full run. Chunks spectra (500/chunk), writes HDF5, sigma-clips, computes statistics, saves FITS. |
+| `stacking/stacking.py` | `Stacking` class: orchestrates the full run. Chunks spectra, writes HDF5, sigma-clips, computes statistics, saves FITS. |
 | `process/processes.py` | `main_parallel()`: multiprocessing loop — read → shift → resample → normalize. |
-| `instruments/euclid.py` | `readSpec()`, `readSpec_metadata()`, `prepare_stacking()`, `_resolve_filepath()`. |
+| `instruments/euclid.py` | Euclid spectral reader and instrument-specific handling. |
 | `instruments/desi.py` | DESI driver (back-compatibility with Euclid crossmatched samples only). |
 | `instruments/generic.py` | Generic FITS driver: binary table + WCS header fallback, auto-detects wavelength range. |
 | `instruments/instruments_rules.json` | Authoritative per-instrument constants, quality defaults, grisms, data releases. |
@@ -304,24 +334,26 @@ Stacking(flat_dict).run()     stacking/stacking.py
 | `spectrum/spectra.py` | Per-spectrum read, redshift shift, extinction correction. |
 | `spectrum/resampling.py` | Wavelength grid resampling. |
 | `spectrum/normalization.py` | Flux normalization; `francis1991_normalize` for template mode. |
-| `statistic/statistics.py` | `stack_statistics()`, `bootstrStack()` for bootstrap uncertainties. |
-| `plot/plot.py` | Plotly interactive plot of the final stack. |
-| `physics/extinction.py` | Galactic extinction correction (Gordon+23, `dust_extinction`). |
-| `utils/log.py` | Unified logging for CLI and Voilà GUI. |
+| `statistic/statistics.py` | Stacking statistics and bootstrap uncertainties. |
+| `plot/plot.py` | Plotly interactive visualization of the final stack and HDF5 spectral distribution. |
+| `physics/extinction.py` | Galactic extinction correction (`dust_extinction`). |
+| `utils/log.py` | Unified logging. |
 
 ### Adding a new instrument
 
-1. Add an entry to `instruments/instruments_rules.json` (constants, quality defaults, surveys, grisms, data releases)
-2. Create `instruments/<name>.py` implementing `readSpec()`, `readSpec_metadata()`, `prepare_stacking()`, `_resolve_filepath()`
-3. Register per-release filename patterns inside `_resolve_filepath()`
+1. Add an entry to `instruments/instruments_rules.json` with constants, quality defaults, surveys, grisms, and data releases.
+2. Create `instruments/<name>.py` implementing the required spectral-reading and instrument-specific functions.
+3. Register any instrument- or release-specific filename conventions.
 
 ---
 
 ## Development
 
-### Install (editable, all extras)
+Clone the repository and install SpectraPyle in editable mode with all optional dependencies:
 
 ```bash
+git clone https://github.com/squai/SpectraPyle.git
+cd SpectraPyle/project_root
 pip install -e ".[all]"
 ```
 
@@ -332,10 +364,10 @@ ruff check src/
 black src/
 ```
 
-### Sanity check (CLI)
+### Sanity check
 
 ```bash
-spectrapyle --config path/to/default.yaml
+spectrapyle --config path/to/config.yaml
 ```
 
 ### Generate documentation locally
@@ -345,8 +377,9 @@ The latest documentation is built automatically on Read the Docs after updates t
 ```bash
 cd docs
 make html
-# Output: docs/_build/html/index.html
 ```
+
+The generated documentation is available under `docs/_build/html/`.
 
 ---
 
@@ -354,7 +387,7 @@ make html
 
 If you use SpectraPyle in your research, please cite:
 
-> Euclid Collaboration, Quai S., Pozzetti L., et al. 2026, *Astronomy & Astrophysics*, 707, A232.
+> Euclid Collaboration, Quai S., Pozzetti L., et al. 2026, *Astronomy & Astrophysics*, 707, A232.  
 > DOI: [10.1051/0004-6361/202557329](https://doi.org/10.1051/0004-6361/202557329)
 
 **BibTeX:**
@@ -381,7 +414,7 @@ Publications using SpectraPyle **must** also include the following acknowledgmen
 
 If you use SpectraPyle with **Euclid** data, you must also follow the [Euclid Consortium publication policy](https://www.euclid-ec.org/) and include the standard Euclid acknowledgment text.
 
-For the full APA reference and detailed acknowledgment requirements, see [Citation & Acknowledgments](docs/citation.rst) in the documentation.
+For the full reference and detailed acknowledgment requirements, see the [SpectraPyle documentation](https://spectrapyle.readthedocs.io/).
 
 ---
 
@@ -392,11 +425,11 @@ For the full APA reference and detailed acknowledgment requirements, see [Citati
 
 **Contributors:**
 - Lucia Pozzetti
-- Margherita Talia 
+- Margherita Talia
 - Zhiying Mao
 - Xavier Lopez Lopez
 - Marcel Lindmeir
-- Elisabeta Lusso 
+- Elisabeta Lusso
 - Sotiria Fotopoulou
 - Michele Moresco
 
@@ -414,7 +447,7 @@ If you have ideas for:
 - **Performance improvements or refactoring** — contributions are valued
 - **Joint research projects using SpectraPyle** — we're open to collaboration
 
-**Please open an issue or pull request** on the [GitHub repository](https://github.com/SpectraPyle/SpectraPyle), or contact the development team:
+**Please open an issue or pull request** on the [GitHub repository](https://github.com/squai/SpectraPyle), or contact the development team:
 - **salvatore.quai@unibo.it**, **salvatore.quai@gmail.com** (lead developer)
 
 All contributions are reviewed and credited. We follow standard open-source practices for code review and testing.
@@ -428,4 +461,3 @@ MIT — see `LICENSE`.
 ## Contact
 
 Salvatore Quai — salvatore.quai@unibo.it, salvatore.quai@gmail.com
-
